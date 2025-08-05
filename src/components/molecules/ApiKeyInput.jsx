@@ -71,11 +71,11 @@ const ApiKeyInput = ({
         </div>
       </div>
 
-      <div className="relative">
+<div className="relative">
         <FormField
           type={showKey ? "text" : "password"}
           value={value}
-          onChange={onChange}
+          onChange={(value) => onChange(provider, value)}
           placeholder={providerInfo.placeholder}
           error={error}
           className="pr-20"
