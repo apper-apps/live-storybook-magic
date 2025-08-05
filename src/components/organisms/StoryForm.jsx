@@ -15,7 +15,7 @@ const [formData, setFormData] = useState({
     enhancedPrompt: "",
     characterCount: 800,
     illustrationCount: 10,
-    llmProvider: null,
+    llmProvider: "",
     illustrationStyle: "cartoon"
   });
 
