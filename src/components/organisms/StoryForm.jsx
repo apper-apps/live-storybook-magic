@@ -34,12 +34,10 @@ const StoryForm = ({ onSubmit, isLoading = false }) => {
     { value: "google", label: "Google Gemini 1.5" }
   ];
 
-  const styleOptions = [
-    { value: "cartoon", label: "Cartoon Style" },
+const styleOptions = [
     { value: "watercolor", label: "Watercolor" },
-    { value: "digital", label: "Digital Art" },
-    { value: "pencil", label: "Pencil Sketch" },
-    { value: "oil", label: "Oil Painting" }
+    { value: "sketch", label: "Sketch" },
+    { value: "digital", label: "Digital Art" }
   ];
 
   const handleFieldChange = (field, value) => {
@@ -236,12 +234,13 @@ const StoryForm = ({ onSubmit, isLoading = false }) => {
               step={1}
             />
 
-            <FormField
+<FormField
               type="select"
               label="Illustration Style"
               value={formData.illustrationStyle}
               onChange={(value) => handleFieldChange("illustrationStyle", value)}
               options={styleOptions}
+              showPreviews={true}
             />
           </div>
 
