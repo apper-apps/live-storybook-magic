@@ -1,104 +1,362 @@
-import storiesData from "@/services/mockData/stories.json";
+import { toast } from 'react-toastify';
 
 class StoriesService {
   constructor() {
-    this.stories = [...storiesData];
+    // Initialize ApperClient
+    const { ApperClient } = window.ApperSDK;
+    this.apperClient = new ApperClient({
+      apperProjectId: import.meta.env.VITE_APPER_PROJECT_ID,
+      apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
+    });
+    
+    this.tableName = 'story';
+    
+    // Define all available fields from the database schema
+    this.allFields = [
+      { field: { Name: "Name" } },
+      { field: { Name: "Tags" } },
+      { field: { Name: "Owner" } },
+      { field: { Name: "CreatedOn" } },
+      { field: { Name: "CreatedBy" } },
+      { field: { Name: "ModifiedOn" } },
+      { field: { Name: "ModifiedBy" } },
+      { field: { Name: "user_id" } },
+      { field: { Name: "prompt" } },
+      { field: { Name: "enhanced_prompt" } },
+      { field: { Name: "llm_used" } },
+      { field: { Name: "story_text" } },
+      { field: { Name: "image_urls" } },
+      { field: { Name: "character_count" } },
+      { field: { Name: "illustration_count" } },
+      { field: { Name: "illustration_style" } },
+      { field: { Name: "title" } },
+      { field: { Name: "created_at" } },
+      { field: { Name: "pdf_url" } }
+    ];
+    
+    // Define updateable fields only (exclude System fields)
+    this.updateableFields = [
+      "Name", "Tags", "user_id", "prompt", "enhanced_prompt", 
+      "llm_used", "story_text", "image_urls", "character_count", 
+      "illustration_count", "illustration_style", "title", 
+      "created_at", "pdf_url"
+    ];
   }
 
   async getAll() {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 300));
-    return [...this.stories];
+    try {
+      const params = {
+        fields: this.allFields,
+        orderBy: [
+          {
+            fieldName: "created_at",
+            sorttype: "DESC"
+          }
+        ],
+        pagingInfo: {
+          limit: 50,
+          offset: 0
+        }
+      };
+      
+      const response = await this.apperClient.fetchRecords(this.tableName, params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        return [];
+      }
+      
+      return response.data || [];
+    } catch (error) {
+      if (error?.response?.data?.message) {
+        console.error("Error fetching stories:", error?.response?.data?.message);
+        toast.error(error?.response?.data?.message);
+      } else {
+        console.error("Error fetching stories:", error.message);
+        toast.error("Failed to fetch stories");
+      }
+      return [];
+    }
   }
 
   async getById(id) {
-    await new Promise(resolve => setTimeout(resolve, 200));
-    const story = this.stories.find(story => story.Id === parseInt(id));
-    if (!story) {
-      throw new Error("Story not found");
+    try {
+      const params = {
+        fields: this.allFields
+      };
+      
+      const response = await this.apperClient.getRecordById(this.tableName, parseInt(id), params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        return null;
+      }
+      
+      return response.data;
+    } catch (error) {
+      if (error?.response?.data?.message) {
+        console.error(`Error fetching story with ID ${id}:`, error?.response?.data?.message);
+        toast.error(error?.response?.data?.message);
+      } else {
+        console.error(`Error fetching story with ID ${id}:`, error.message);
+        toast.error("Failed to fetch story");
+      }
+      return null;
     }
-    return { ...story };
   }
 
-async create(storyData) {
-    await new Promise(resolve => setTimeout(resolve, 400));
-    
-    // If no API key provided or mock generation requested, use mock story generation
-    if (!storyData.apiKey || storyData.useMockGeneration) {
-      return await this.createMockStory(storyData);
+  async create(storyData) {
+    try {
+      // If no API key provided or mock generation requested, use mock story generation
+      if (!storyData.apiKey || storyData.useMockGeneration) {
+        return await this.createMockStory(storyData);
+      }
+      
+      // Filter to only include updateable fields
+      const filteredData = {};
+      this.updateableFields.forEach(field => {
+        if (storyData[field] !== undefined) {
+          filteredData[field] = storyData[field];
+        }
+      });
+      
+      // Set default values and ensure proper formatting
+      const recordData = {
+        Name: storyData.title || `Story: ${storyData.prompt?.substring(0, 50)}...`,
+        Tags: storyData.tags || "",
+        user_id: storyData.user_id || null,
+        prompt: storyData.prompt,
+        enhanced_prompt: storyData.enhanced_prompt || null,
+        llm_used: storyData.llm_used,
+        story_text: storyData.story_text,
+        image_urls: Array.isArray(storyData.image_urls) ? storyData.image_urls.join(',') : (storyData.image_urls || ""),
+        character_count: parseInt(storyData.character_count) || 800,
+        illustration_count: parseInt(storyData.illustration_count) || 10,
+        illustration_style: storyData.illustration_style || "cartoon",
+        title: storyData.title || null,
+        created_at: new Date().toISOString(),
+        pdf_url: storyData.pdf_url || null
+      };
+      
+      const params = {
+        records: [recordData]
+      };
+      
+      const response = await this.apperClient.createRecord(this.tableName, params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        return null;
+      }
+      
+      if (response.results) {
+        const successfulRecords = response.results.filter(result => result.success);
+        const failedRecords = response.results.filter(result => !result.success);
+        
+        if (failedRecords.length > 0) {
+          console.error(`Failed to create ${failedRecords.length} story records:${JSON.stringify(failedRecords)}`);
+          
+          failedRecords.forEach(record => {
+            record.errors?.forEach(error => {
+              toast.error(`${error.fieldLabel}: ${error.message}`);
+            });
+            if (record.message) toast.error(record.message);
+          });
+        }
+        
+        if (successfulRecords.length > 0) {
+          toast.success("Story created successfully!");
+          return successfulRecords[0].data;
+        }
+      }
+      
+      return null;
+    } catch (error) {
+      if (error?.response?.data?.message) {
+        console.error("Error creating story:", error?.response?.data?.message);
+        toast.error(error?.response?.data?.message);
+      } else {
+        console.error("Error creating story:", error.message);
+        toast.error("Failed to create story");
+      }
+      return null;
     }
-    
-    const newId = Math.max(...this.stories.map(s => s.Id), 0) + 1;
-    const newStory = {
-      Id: newId,
-      user_id: null,
-      prompt: storyData.prompt,
-      enhanced_prompt: storyData.enhanced_prompt || null,
-      llm_used: storyData.llm_used,
-      story_text: storyData.story_text,
-      image_urls: storyData.image_urls || [],
-      character_count: storyData.character_count || 800,
-      illustration_count: storyData.illustration_count || 10,
-      illustration_style: storyData.illustration_style || "cartoon",
-      title: storyData.title || null,
-      created_at: new Date().toISOString(),
-      pdf_url: storyData.pdf_url || null
-    };
-
-    this.stories.unshift(newStory);
-    return { ...newStory };
   }
 
   async update(id, updateData) {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
-    const index = this.stories.findIndex(story => story.Id === parseInt(id));
-    if (index === -1) {
-      throw new Error("Story not found");
+    try {
+      // Filter to only include updateable fields
+      const filteredData = { Id: parseInt(id) };
+      this.updateableFields.forEach(field => {
+        if (updateData[field] !== undefined) {
+          filteredData[field] = updateData[field];
+        }
+      });
+      
+      // Handle image_urls array formatting
+      if (filteredData.image_urls && Array.isArray(filteredData.image_urls)) {
+        filteredData.image_urls = filteredData.image_urls.join(',');
+      }
+      
+      const params = {
+        records: [filteredData]
+      };
+      
+      const response = await this.apperClient.updateRecord(this.tableName, params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        return null;
+      }
+      
+      if (response.results) {
+        const successfulUpdates = response.results.filter(result => result.success);
+        const failedUpdates = response.results.filter(result => !result.success);
+        
+        if (failedUpdates.length > 0) {
+          console.error(`Failed to update ${failedUpdates.length} story records:${JSON.stringify(failedUpdates)}`);
+          
+          failedUpdates.forEach(record => {
+            record.errors?.forEach(error => {
+              toast.error(`${error.fieldLabel}: ${error.message}`);
+            });
+            if (record.message) toast.error(record.message);
+          });
+        }
+        
+        if (successfulUpdates.length > 0) {
+          toast.success("Story updated successfully!");
+          return successfulUpdates[0].data;
+        }
+      }
+      
+      return null;
+    } catch (error) {
+      if (error?.response?.data?.message) {
+        console.error("Error updating story:", error?.response?.data?.message);
+        toast.error(error?.response?.data?.message);
+      } else {
+        console.error("Error updating story:", error.message);
+        toast.error("Failed to update story");
+      }
+      return null;
     }
-
-    this.stories[index] = {
-      ...this.stories[index],
-      ...updateData,
-      Id: parseInt(id) // Ensure ID doesn't change
-    };
-
-    return { ...this.stories[index] };
   }
 
   async delete(id) {
-    await new Promise(resolve => setTimeout(resolve, 250));
-    
-    const index = this.stories.findIndex(story => story.Id === parseInt(id));
-    if (index === -1) {
-      throw new Error("Story not found");
+    try {
+      const params = {
+        RecordIds: [parseInt(id)]
+      };
+      
+      const response = await this.apperClient.deleteRecord(this.tableName, params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        return false;
+      }
+      
+      if (response.results) {
+        const successfulDeletions = response.results.filter(result => result.success);
+        const failedDeletions = response.results.filter(result => !result.success);
+        
+        if (failedDeletions.length > 0) {
+          console.error(`Failed to delete ${failedDeletions.length} story records:${JSON.stringify(failedDeletions)}`);
+          
+          failedDeletions.forEach(record => {
+            if (record.message) toast.error(record.message);
+          });
+        }
+        
+        if (successfulDeletions.length > 0) {
+          toast.success("Story deleted successfully!");
+          return true;
+        }
+      }
+      
+      return false;
+    } catch (error) {
+      if (error?.response?.data?.message) {
+        console.error("Error deleting story:", error?.response?.data?.message);
+        toast.error(error?.response?.data?.message);
+      } else {
+        console.error("Error deleting story:", error.message);
+        toast.error("Failed to delete story");
+      }
+      return false;
     }
-
-    const deletedStory = this.stories.splice(index, 1)[0];
-    return { ...deletedStory };
   }
-// Additional methods for story-specific operations
+
+  // Additional methods for story-specific operations
   async getRecentStories(limit = 6) {
-    await new Promise(resolve => setTimeout(resolve, 200));
-    return this.stories
-      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-      .slice(0, limit)
-      .map(story => ({ ...story }));
+    try {
+      const params = {
+        fields: this.allFields,
+        orderBy: [
+          {
+            fieldName: "created_at",
+            sorttype: "DESC"
+          }
+        ],
+        pagingInfo: {
+          limit: limit,
+          offset: 0
+        }
+      };
+      
+      const response = await this.apperClient.fetchRecords(this.tableName, params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        return [];
+      }
+      
+      return response.data || [];
+    } catch (error) {
+      console.error("Error fetching recent stories:", error.message);
+      return [];
+    }
   }
 
   async searchStories(query) {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    const lowercaseQuery = query.toLowerCase();
-    return this.stories
-      .filter(story => 
-        story.prompt.toLowerCase().includes(lowercaseQuery) ||
-        story.story_text?.toLowerCase().includes(lowercaseQuery) ||
-        story.title?.toLowerCase().includes(lowercaseQuery)
-      )
-      .map(story => ({ ...story }));
+    try {
+      const params = {
+        fields: this.allFields,
+        where: [
+          {
+            FieldName: "prompt",
+            Operator: "Contains",
+            Values: [query]
+          }
+        ],
+        orderBy: [
+          {
+            fieldName: "created_at",
+            sorttype: "DESC"
+          }
+        ]
+      };
+      
+      const response = await this.apperClient.fetchRecords(this.tableName, params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        return [];
+      }
+      
+      return response.data || [];
+    } catch (error) {
+      console.error("Error searching stories:", error.message);
+      return [];
+    }
   }
 
-  // Regenerate individual illustration
+  // Regenerate individual illustration - kept for compatibility
   async regenerateIllustration(storyId, illustrationIndex, sceneDescription) {
     await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate API delay
     
@@ -115,33 +373,34 @@ async create(storyData) {
 
     return regeneratedIllustration;
   }
-// Mock story generation for when no API keys are configured
+
+  // Mock story generation for when no API keys are configured - kept for compatibility
   async createMockStory(storyData) {
     await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate API delay
     
-    const newId = Math.max(...this.stories.map(s => s.Id), 0) + 1;
     const mockStoryText = this.generateMockStoryText(storyData.prompt, storyData.character_count || 800);
     const mockImages = this.generateMockImages(storyData.illustration_count || 10);
     const mockTitle = this.generateTitleFromPrompt(storyData.prompt);
     
-    const newStory = {
-      Id: newId,
-      user_id: null,
+    const mockStoryRecord = {
+      Name: mockTitle,
+      Tags: storyData.tags || "",
+      user_id: storyData.user_id || null,
       prompt: storyData.prompt,
       enhanced_prompt: storyData.enhanced_prompt || null,
       llm_used: storyData.llm_used || 'mock',
       story_text: mockStoryText,
-      image_urls: mockImages,
-      character_count: storyData.character_count || 800,
-      illustration_count: storyData.illustration_count || 10,
+      image_urls: mockImages.join(','),
+      character_count: parseInt(storyData.character_count) || 800,
+      illustration_count: parseInt(storyData.illustration_count) || 10,
       illustration_style: storyData.illustration_style || "cartoon",
       title: mockTitle,
       created_at: new Date().toISOString(),
       pdf_url: null
     };
 
-    this.stories.unshift(newStory);
-    return { ...newStory };
+    // Create the record in the database
+    return await this.create(mockStoryRecord);
   }
 
   generateMockStoryText(prompt, characterCount) {
