@@ -10,12 +10,12 @@ import { toast } from "react-toastify";
 import { settingsService } from "@/services/api/settingsService";
 
 const StoryForm = ({ onSubmit, isLoading = false }) => {
-  const [formData, setFormData] = useState({
+const [formData, setFormData] = useState({
     prompt: "",
     enhancedPrompt: "",
     characterCount: 800,
     illustrationCount: 10,
-    llmProvider: "",
+    llmProvider: null,
     illustrationStyle: "cartoon"
   });
 
