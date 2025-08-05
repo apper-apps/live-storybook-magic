@@ -15,7 +15,9 @@ const FormField = ({
 }) => {
 const handleChange = (e) => {
     if (!e || !e.target) return;
-    onChange(e.target.value);
+    if (typeof onChange === 'function') {
+      onChange(e.target.value);
+    }
   };
 
   if (type === "textarea") {
