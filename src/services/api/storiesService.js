@@ -1,64 +1,49 @@
-import { toast } from 'react-toastify';
+import { toast } from "react-toastify";
+import React from "react";
 
+// Stories Service - Manages story creation, retrieval, and management operations using ApperClient
 class StoriesService {
   constructor() {
-    // Initialize ApperClient
+    // Initialize ApperClient with Project ID and Public Key
     const { ApperClient } = window.ApperSDK;
     this.apperClient = new ApperClient({
       apperProjectId: import.meta.env.VITE_APPER_PROJECT_ID,
       apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
     });
-    
     this.tableName = 'story';
-    
-    // Define all available fields from the database schema
-    this.allFields = [
-      { field: { Name: "Name" } },
-      { field: { Name: "Tags" } },
-      { field: { Name: "Owner" } },
-      { field: { Name: "CreatedOn" } },
-      { field: { Name: "CreatedBy" } },
-      { field: { Name: "ModifiedOn" } },
-      { field: { Name: "ModifiedBy" } },
-      { field: { Name: "user_id" } },
-      { field: { Name: "prompt" } },
-      { field: { Name: "enhanced_prompt" } },
-      { field: { Name: "llm_used" } },
-      { field: { Name: "story_text" } },
-      { field: { Name: "image_urls" } },
-      { field: { Name: "character_count" } },
-      { field: { Name: "illustration_count" } },
-      { field: { Name: "illustration_style" } },
-      { field: { Name: "title" } },
-      { field: { Name: "created_at" } },
-      { field: { Name: "pdf_url" } }
-    ];
-    
-    // Define updateable fields only (exclude System fields)
-    this.updateableFields = [
-      "Name", "Tags", "user_id", "prompt", "enhanced_prompt", 
-      "llm_used", "story_text", "image_urls", "character_count", 
-      "illustration_count", "illustration_style", "title", 
-      "created_at", "pdf_url"
-    ];
   }
 
+  // Get all stories for the current user
   async getAll() {
     try {
       const params = {
-        fields: this.allFields,
+        fields: [
+          { field: { Name: "Name" } },
+          { field: { Name: "Tags" } },
+          { field: { Name: "user_id" } },
+          { field: { Name: "prompt" } },
+          { field: { Name: "enhanced_prompt" } },
+          { field: { Name: "llm_used" } },
+          { field: { Name: "story_text" } },
+          { field: { Name: "image_urls" } },
+          { field: { Name: "character_count" } },
+          { field: { Name: "illustration_count" } },
+          { field: { Name: "illustration_style" } },
+          { field: { Name: "title" } },
+          { field: { Name: "created_at" } },
+          { field: { Name: "pdf_url" } },
+          { field: { Name: "CreatedOn" } },
+          { field: { Name: "ModifiedOn" } }
+        ],
         orderBy: [
-          {
-            fieldName: "created_at",
-            sorttype: "DESC"
-          }
+          { fieldName: "created_at", sorttype: "DESC" }
         ],
         pagingInfo: {
           limit: 50,
           offset: 0
         }
       };
-      
+
       const response = await this.apperClient.fetchRecords(this.tableName, params);
       
       if (!response.success) {
@@ -66,84 +51,86 @@ class StoriesService {
         toast.error(response.message);
         return [];
       }
-      
+
       return response.data || [];
     } catch (error) {
       if (error?.response?.data?.message) {
         console.error("Error fetching stories:", error?.response?.data?.message);
-        toast.error(error?.response?.data?.message);
       } else {
-        console.error("Error fetching stories:", error.message);
-        toast.error("Failed to fetch stories");
+        console.error(error.message);
       }
       return [];
     }
   }
 
-  async getById(id) {
+  // Get story by ID
+  async getById(storyId) {
     try {
       const params = {
-        fields: this.allFields
+        fields: [
+          { field: { Name: "Name" } },
+          { field: { Name: "Tags" } },
+          { field: { Name: "user_id" } },
+          { field: { Name: "prompt" } },
+          { field: { Name: "enhanced_prompt" } },
+          { field: { Name: "llm_used" } },
+          { field: { Name: "story_text" } },
+          { field: { Name: "image_urls" } },
+          { field: { Name: "character_count" } },
+          { field: { Name: "illustration_count" } },
+          { field: { Name: "illustration_style" } },
+          { field: { Name: "title" } },
+          { field: { Name: "created_at" } },
+          { field: { Name: "pdf_url" } },
+          { field: { Name: "CreatedOn" } },
+          { field: { Name: "ModifiedOn" } }
+        ]
       };
-      
-      const response = await this.apperClient.getRecordById(this.tableName, parseInt(id), params);
+
+      const response = await this.apperClient.getRecordById(this.tableName, storyId, params);
       
       if (!response.success) {
         console.error(response.message);
         toast.error(response.message);
         return null;
       }
-      
+
       return response.data;
     } catch (error) {
       if (error?.response?.data?.message) {
-        console.error(`Error fetching story with ID ${id}:`, error?.response?.data?.message);
-        toast.error(error?.response?.data?.message);
+        console.error(`Error fetching story with ID ${storyId}:`, error?.response?.data?.message);
       } else {
-        console.error(`Error fetching story with ID ${id}:`, error.message);
-        toast.error("Failed to fetch story");
+        console.error(error.message);
       }
       return null;
     }
   }
 
+  // Create a new story (only includes updateable fields)
   async create(storyData) {
     try {
-      // If no API key provided or mock generation requested, use mock story generation
-      if (!storyData.apiKey || storyData.useMockGeneration) {
-        return await this.createMockStory(storyData);
-      }
-      
-      // Filter to only include updateable fields
-      const filteredData = {};
-      this.updateableFields.forEach(field => {
-        if (storyData[field] !== undefined) {
-          filteredData[field] = storyData[field];
-        }
-      });
-      
-      // Set default values and ensure proper formatting
-      const recordData = {
-        Name: storyData.title || `Story: ${storyData.prompt?.substring(0, 50)}...`,
-        Tags: storyData.tags || "",
-        user_id: storyData.user_id || null,
-        prompt: storyData.prompt,
-        enhanced_prompt: storyData.enhanced_prompt || null,
-        llm_used: storyData.llm_used,
-        story_text: storyData.story_text,
-        image_urls: Array.isArray(storyData.image_urls) ? storyData.image_urls.join(',') : (storyData.image_urls || ""),
-        character_count: parseInt(storyData.character_count) || 800,
-        illustration_count: parseInt(storyData.illustration_count) || 10,
-        illustration_style: storyData.illustration_style || "cartoon",
-        title: storyData.title || null,
-        created_at: new Date().toISOString(),
-        pdf_url: storyData.pdf_url || null
-      };
-      
       const params = {
-        records: [recordData]
+        records: [
+          {
+            // Only include updateable fields based on field visibility
+            Name: storyData.title || storyData.Name,
+            Tags: storyData.Tags || '',
+            user_id: storyData.user_id,
+            prompt: storyData.prompt,
+            enhanced_prompt: storyData.enhanced_prompt,
+            llm_used: storyData.llm_used,
+            story_text: storyData.story_text,
+            image_urls: storyData.image_urls,
+            character_count: parseInt(storyData.character_count) || 0,
+            illustration_count: parseInt(storyData.illustration_count) || 0,
+            illustration_style: storyData.illustration_style,
+            title: storyData.title,
+            created_at: storyData.created_at || new Date().toISOString(),
+            pdf_url: storyData.pdf_url || null
+          }
+        ]
       };
-      
+
       const response = await this.apperClient.createRecord(this.tableName, params);
       
       if (!response.success) {
@@ -151,7 +138,7 @@ class StoriesService {
         toast.error(response.message);
         return null;
       }
-      
+
       if (response.results) {
         const successfulRecords = response.results.filter(result => result.success);
         const failedRecords = response.results.filter(result => !result.success);
@@ -168,7 +155,7 @@ class StoriesService {
         }
         
         if (successfulRecords.length > 0) {
-          toast.success("Story created successfully!");
+          toast.success('Story created successfully!');
           return successfulRecords[0].data;
         }
       }
@@ -177,34 +164,39 @@ class StoriesService {
     } catch (error) {
       if (error?.response?.data?.message) {
         console.error("Error creating story:", error?.response?.data?.message);
-        toast.error(error?.response?.data?.message);
       } else {
-        console.error("Error creating story:", error.message);
-        toast.error("Failed to create story");
+        console.error(error.message);
       }
       return null;
     }
   }
 
-  async update(id, updateData) {
+  // Update an existing story (only includes updateable fields)
+  async update(storyId, updateData) {
     try {
-      // Filter to only include updateable fields
-      const filteredData = { Id: parseInt(id) };
-      this.updateableFields.forEach(field => {
-        if (updateData[field] !== undefined) {
-          filteredData[field] = updateData[field];
-        }
-      });
-      
-      // Handle image_urls array formatting
-      if (filteredData.image_urls && Array.isArray(filteredData.image_urls)) {
-        filteredData.image_urls = filteredData.image_urls.join(',');
-      }
-      
       const params = {
-        records: [filteredData]
+        records: [
+          {
+            Id: parseInt(storyId),
+            // Only include updateable fields based on field visibility
+            ...(updateData.Name !== undefined && { Name: updateData.Name }),
+            ...(updateData.Tags !== undefined && { Tags: updateData.Tags }),
+            ...(updateData.user_id !== undefined && { user_id: updateData.user_id }),
+            ...(updateData.prompt !== undefined && { prompt: updateData.prompt }),
+            ...(updateData.enhanced_prompt !== undefined && { enhanced_prompt: updateData.enhanced_prompt }),
+            ...(updateData.llm_used !== undefined && { llm_used: updateData.llm_used }),
+            ...(updateData.story_text !== undefined && { story_text: updateData.story_text }),
+            ...(updateData.image_urls !== undefined && { image_urls: updateData.image_urls }),
+            ...(updateData.character_count !== undefined && { character_count: parseInt(updateData.character_count) }),
+            ...(updateData.illustration_count !== undefined && { illustration_count: parseInt(updateData.illustration_count) }),
+            ...(updateData.illustration_style !== undefined && { illustration_style: updateData.illustration_style }),
+            ...(updateData.title !== undefined && { title: updateData.title }),
+            ...(updateData.created_at !== undefined && { created_at: updateData.created_at }),
+            ...(updateData.pdf_url !== undefined && { pdf_url: updateData.pdf_url })
+          }
+        ]
       };
-      
+
       const response = await this.apperClient.updateRecord(this.tableName, params);
       
       if (!response.success) {
@@ -212,7 +204,7 @@ class StoriesService {
         toast.error(response.message);
         return null;
       }
-      
+
       if (response.results) {
         const successfulUpdates = response.results.filter(result => result.success);
         const failedUpdates = response.results.filter(result => !result.success);
@@ -229,7 +221,7 @@ class StoriesService {
         }
         
         if (successfulUpdates.length > 0) {
-          toast.success("Story updated successfully!");
+          toast.success('Story updated successfully!');
           return successfulUpdates[0].data;
         }
       }
@@ -238,21 +230,20 @@ class StoriesService {
     } catch (error) {
       if (error?.response?.data?.message) {
         console.error("Error updating story:", error?.response?.data?.message);
-        toast.error(error?.response?.data?.message);
       } else {
-        console.error("Error updating story:", error.message);
-        toast.error("Failed to update story");
+        console.error(error.message);
       }
       return null;
     }
   }
 
-  async delete(id) {
+  // Delete a story
+  async delete(storyId) {
     try {
       const params = {
-        RecordIds: [parseInt(id)]
+        RecordIds: [parseInt(storyId)]
       };
-      
+
       const response = await this.apperClient.deleteRecord(this.tableName, params);
       
       if (!response.success) {
@@ -260,7 +251,7 @@ class StoriesService {
         toast.error(response.message);
         return false;
       }
-      
+
       if (response.results) {
         const successfulDeletions = response.results.filter(result => result.success);
         const failedDeletions = response.results.filter(result => !result.success);
@@ -274,7 +265,7 @@ class StoriesService {
         }
         
         if (successfulDeletions.length > 0) {
-          toast.success("Story deleted successfully!");
+          toast.success('Story deleted successfully!');
           return true;
         }
       }
@@ -283,155 +274,140 @@ class StoriesService {
     } catch (error) {
       if (error?.response?.data?.message) {
         console.error("Error deleting story:", error?.response?.data?.message);
-        toast.error(error?.response?.data?.message);
       } else {
-        console.error("Error deleting story:", error.message);
-        toast.error("Failed to delete story");
+        console.error(error.message);
       }
       return false;
     }
   }
 
-  // Additional methods for story-specific operations
+  // Get recent stories with limit
   async getRecentStories(limit = 6) {
     try {
       const params = {
-        fields: this.allFields,
+        fields: [
+          { field: { Name: "Name" } },
+          { field: { Name: "title" } },
+          { field: { Name: "image_urls" } },
+          { field: { Name: "character_count" } },
+          { field: { Name: "illustration_count" } },
+          { field: { Name: "illustration_style" } },
+          { field: { Name: "created_at" } }
+        ],
         orderBy: [
-          {
-            fieldName: "created_at",
-            sorttype: "DESC"
-          }
+          { fieldName: "created_at", sorttype: "DESC" }
         ],
         pagingInfo: {
           limit: limit,
           offset: 0
         }
       };
-      
+
       const response = await this.apperClient.fetchRecords(this.tableName, params);
       
       if (!response.success) {
         console.error(response.message);
         return [];
       }
-      
+
       return response.data || [];
     } catch (error) {
-      console.error("Error fetching recent stories:", error.message);
+      if (error?.response?.data?.message) {
+        console.error("Error fetching recent stories:", error?.response?.data?.message);
+      } else {
+        console.error(error.message);
+      }
       return [];
     }
   }
 
+  // Search stories by query
   async searchStories(query) {
     try {
       const params = {
-        fields: this.allFields,
+        fields: [
+          { field: { Name: "Name" } },
+          { field: { Name: "title" } },
+          { field: { Name: "prompt" } },
+          { field: { Name: "story_text" } },
+          { field: { Name: "image_urls" } },
+          { field: { Name: "character_count" } },
+          { field: { Name: "illustration_count" } },
+          { field: { Name: "illustration_style" } },
+          { field: { Name: "created_at" } }
+        ],
         where: [
           {
-            FieldName: "prompt",
+            FieldName: "title",
             Operator: "Contains",
-            Values: [query]
+            Values: [query],
+            Include: true
           }
         ],
         orderBy: [
-          {
-            fieldName: "created_at",
-            sorttype: "DESC"
-          }
+          { fieldName: "created_at", sorttype: "DESC" }
         ]
       };
-      
+
       const response = await this.apperClient.fetchRecords(this.tableName, params);
       
       if (!response.success) {
         console.error(response.message);
         return [];
       }
-      
+
       return response.data || [];
     } catch (error) {
-      console.error("Error searching stories:", error.message);
+      if (error?.response?.data?.message) {
+        console.error("Error searching stories:", error?.response?.data?.message);
+      } else {
+        console.error(error.message);
+      }
       return [];
     }
   }
 
-  // Regenerate individual illustration - kept for compatibility
+  // Regenerate illustration for a story
   async regenerateIllustration(storyId, illustrationIndex, sceneDescription) {
-    await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate API delay
-    
-    // In a real implementation, this would call DALL-E API with adjusted prompt
-    const adjustedPrompt = `Regenerate illustration of ${sceneDescription}`;
-    
-    const regeneratedIllustration = {
-      scene_number: illustrationIndex + 1,
-      description: sceneDescription,
-      dalle_prompt: adjustedPrompt,
-      image_url: `https://picsum.photos/400/300?random=${Date.now()}-regenerated-${illustrationIndex}`,
-      caption: `Regenerated scene ${illustrationIndex + 1}`
-    };
+    try {
+      // In a real implementation, this would trigger illustration regeneration
+      // For now, we'll update the story with a new random image
+      const newImageUrl = `https://picsum.photos/400/300?random=${Date.now()}`;
+      
+      const story = await this.getById(storyId);
+      if (!story) return null;
 
-    return regeneratedIllustration;
-  }
+      let imageUrls = [];
+      try {
+        imageUrls = typeof story.image_urls === 'string' ? JSON.parse(story.image_urls) : story.image_urls || [];
+      } catch (e) {
+        imageUrls = [];
+      }
 
-  // Mock story generation for when no API keys are configured - kept for compatibility
-  async createMockStory(storyData) {
-    await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate API delay
-    
-    const mockStoryText = this.generateMockStoryText(storyData.prompt, storyData.character_count || 800);
-    const mockImages = this.generateMockImages(storyData.illustration_count || 10);
-    const mockTitle = this.generateTitleFromPrompt(storyData.prompt);
-    
-    const mockStoryRecord = {
-      Name: mockTitle,
-      Tags: storyData.tags || "",
-      user_id: storyData.user_id || null,
-      prompt: storyData.prompt,
-      enhanced_prompt: storyData.enhanced_prompt || null,
-      llm_used: storyData.llm_used || 'mock',
-      story_text: mockStoryText,
-      image_urls: mockImages.join(','),
-      character_count: parseInt(storyData.character_count) || 800,
-      illustration_count: parseInt(storyData.illustration_count) || 10,
-      illustration_style: storyData.illustration_style || "cartoon",
-      title: mockTitle,
-      created_at: new Date().toISOString(),
-      pdf_url: null
-    };
+      if (illustrationIndex < imageUrls.length) {
+        imageUrls[illustrationIndex] = newImageUrl;
+      }
 
-    // Create the record in the database
-    return await this.create(mockStoryRecord);
-  }
+      const updatedStory = await this.update(storyId, {
+        image_urls: JSON.stringify(imageUrls)
+      });
 
-  generateMockStoryText(prompt, characterCount) {
-    const words = prompt.toLowerCase().split(' ');
-    const keyWords = words.filter(word => word.length > 3);
-    const mainWord = keyWords[0] || 'adventure';
-    
-    const baseStory = `Once upon a time, there was a magical ${mainWord} that captured everyone's imagination. The story began in a wonderful place where dreams come true and anything is possible. Characters embarked on an incredible journey filled with excitement, wonder, and discovery. Along the way, they met fascinating friends who helped them overcome challenges with courage and kindness. Each step of their adventure revealed new mysteries and brought them closer to their ultimate goal. The tale unfolded with beautiful moments of friendship, bravery, and joy that touched the hearts of all who heard it.`;
-    
-    // Extend or trim the story to match the desired character count
-    if (baseStory.length < characterCount) {
-      const additionalText = " The adventure continued with even more exciting discoveries and heartwarming moments that brought everyone closer together. Magic sparkled in the air as the characters learned valuable lessons about friendship, courage, and believing in themselves. Their journey took them through enchanted forests, across sparkling rivers, and over magnificent mountains where they discovered that the greatest treasure of all was the bonds they had formed along the way.";
-      return (baseStory + additionalText).substring(0, characterCount);
+      if (updatedStory) {
+        toast.success('Illustration regenerated successfully!');
+      }
+
+      return updatedStory;
+    } catch (error) {
+      if (error?.response?.data?.message) {
+        console.error("Error regenerating illustration:", error?.response?.data?.message);
+      } else {
+        console.error(error.message);
+      }
+      toast.error('Failed to regenerate illustration');
+      return null;
     }
-    
-    return baseStory.substring(0, characterCount);
   }
-
-  generateMockImages(count) {
-    const images = [];
-    for (let i = 0; i < count; i++) {
-      images.push(`https://picsum.photos/400/300?random=${Date.now()}-${i}`);
-    }
-    return images;
-  }
-
-  generateTitleFromPrompt(prompt) {
-    const words = prompt.split(' ').slice(0, 3);
-    const title = words.map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-    return `The Tale of ${title}`;
-  }
+}
 }
 
 export const storiesService = new StoriesService();
