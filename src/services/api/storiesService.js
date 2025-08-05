@@ -72,9 +72,8 @@ class StoriesService {
     const deletedStory = this.stories.splice(index, 1)[0];
     return { ...deletedStory };
   }
-
-  // Additional methods for story-specific operations
-async getRecentStories(limit = 6) {
+// Additional methods for story-specific operations
+  async getRecentStories(limit = 6) {
     await new Promise(resolve => setTimeout(resolve, 200));
     return this.stories
       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
@@ -111,5 +110,6 @@ async getRecentStories(limit = 6) {
 
     return regeneratedIllustration;
   }
+}
 
 export const storiesService = new StoriesService();
