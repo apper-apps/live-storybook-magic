@@ -404,10 +404,9 @@ class StoriesService {
         console.error(error.message);
       }
       toast.error('Failed to regenerate illustration');
-      return null;
+return null;
     }
   }
-}
 }
 
 export const storiesService = new StoriesService();
