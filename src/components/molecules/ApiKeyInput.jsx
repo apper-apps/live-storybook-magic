@@ -93,25 +93,11 @@ const ApiKeyInput = ({
             />
           </button>
           
-          {value && onValidate && (
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              onClick={() => onValidate(provider, value)}
-              disabled={isValidating}
-              className="p-1 h-auto"
-            >
-              {isValidating ? (
-                <div className="loading-dots">
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                </div>
-              ) : (
-                <ApperIcon name="CheckCircle" className="w-4 h-4" />
-              )}
-            </Button>
+{isValid === true && (
+            <ApperIcon name="CheckCircle" className="w-4 h-4 text-green-500" />
+          )}
+          {isValid === false && (
+            <ApperIcon name="AlertCircle" className="w-4 h-4 text-red-500" />
           )}
         </div>
       </div>

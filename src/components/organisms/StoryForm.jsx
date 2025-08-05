@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import FormField from "@/components/molecules/FormField";
 import Button from "@/components/atoms/Button";
@@ -7,6 +7,7 @@ import ApiKeyInput from "@/components/molecules/ApiKeyInput";
 import ApperIcon from "@/components/ApperIcon";
 import { enhancePrompt } from "@/utils/transformers";
 import { toast } from "react-toastify";
+import { settingsService } from "@/services/api/settingsService";
 
 const StoryForm = ({ onSubmit, isLoading = false }) => {
   const [formData, setFormData] = useState({
@@ -18,7 +19,7 @@ const StoryForm = ({ onSubmit, isLoading = false }) => {
     illustrationStyle: "cartoon"
   });
 
-  const [apiKeys, setApiKeys] = useState({
+const [apiKeys, setApiKeys] = useState({
     openai: "",
     anthropic: "",
     google: ""
@@ -27,7 +28,11 @@ const StoryForm = ({ onSubmit, isLoading = false }) => {
   const [validationStatus, setValidationStatus] = useState({});
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [showEnhanced, setShowEnhanced] = useState(false);
-
+// Load API keys from settings on component mount
+  useEffect(() => {
+    const settings = settingsService.getSettings();
+    setApiKeys(settings.apiKeys);
+  }, []);
   const llmOptions = [
     { value: "openai", label: "OpenAI GPT-4o" },
     { value: "anthropic", label: "Anthropic Claude Sonnet" },
@@ -44,8 +49,10 @@ const styleOptions = [
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleApiKeyChange = (provider, key) => {
+const handleApiKeyChange = (provider, key) => {
     setApiKeys(prev => ({ ...prev, [provider]: key }));
+    // Save to persistent storage
+    settingsService.saveApiKey(provider, key);
     // Reset validation status when key changes
     setValidationStatus(prev => ({ ...prev, [provider]: null }));
   };
@@ -271,12 +278,22 @@ const styleOptions = [
                 animate={{ opacity: 1, height: "auto" }}
                 transition={{ duration: 0.3 }}
               >
-                <ApiKeyInput
+<ApiKeyInput
                   provider={formData.llmProvider}
                   value={apiKeys[formData.llmProvider]}
                   onChange={(value) => handleApiKeyChange(formData.llmProvider, value)}
                   isValid={validationStatus[formData.llmProvider]}
                 />
+                {!apiKeys[formData.llmProvider] && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-2">
+                    <div className="flex items-center gap-2">
+                      <ApperIcon name="Info" className="w-4 h-4 text-blue-600" />
+                      <p className="text-sm text-blue-700">
+                        No API key configured. <a href="/settings" className="font-medium text-primary-500 hover:underline">Go to Settings</a> to add your API keys.
+                      </p>
+                    </div>
+                  </div>
+                )}
               </motion.div>
             )}
           </div>

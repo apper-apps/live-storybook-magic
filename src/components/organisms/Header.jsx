@@ -1,9 +1,8 @@
 import React, { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { useNavigate, useLocation } from "react-router-dom";
-import Button from "@/components/atoms/Button";
+import { AnimatePresence, motion } from "framer-motion";
+import { useLocation, useNavigate, Link } from "react-router-dom";
 import ApperIcon from "@/components/ApperIcon";
-
+import Button from "@/components/atoms/Button";
 const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
@@ -38,18 +37,18 @@ const Header = () => {
             </div>
           </motion.div>
 
-          {/* Desktop Navigation */}
+{/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-1">
             {navigationItems.map((item) => (
               <motion.button
                 key={item.path}
                 onClick={() => navigate(item.path)}
-                className={`px-4 py-2 rounded-full font-medium transition-all duration-300 flex items-center space-x-2 ${
+                className={`flex items-center space-x-2 px-4 py-2 rounded-xl font-medium transition-all duration-300 ${
                   isActive(item.path)
                     ? "bg-primary-500 text-white shadow-lg"
                     : "text-gray-600 hover:bg-primary-50 hover:text-primary-600"
                 }`}
-                whileHover={{ scale: 1.05 }}
+                whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.95 }}
               >
                 <ApperIcon name={item.icon} className="w-4 h-4" />

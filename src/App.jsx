@@ -5,6 +5,7 @@ import Header from "@/components/organisms/Header";
 import HomePage from "@/pages/HomePage";
 import CreateStoryPage from "@/pages/CreateStoryPage";
 import StoriesPage from "@/pages/StoriesPage";
+import SettingsPage from "@/pages/SettingsPage";
 
 function App() {
   return (
@@ -14,9 +15,10 @@ function App() {
         
         <main className="flex-1">
           <Routes>
-            <Route path="/" element={<HomePage />} />
+<Route path="/" element={<HomePage />} />
             <Route path="/create" element={<CreateStoryPage />} />
             <Route path="/stories" element={<StoriesPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
           </Routes>
         </main>
 
