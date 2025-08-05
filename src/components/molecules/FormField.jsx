@@ -14,9 +14,10 @@ const FormField = ({
   ...props 
 }) => {
 const handleChange = (e) => {
-    if (!e || !e.target) return;
     if (typeof onChange === 'function') {
-      onChange(e.target.value);
+      // Handle both event objects (from Input/Textarea) and direct values (from Select)
+      const value = e && e.target ? e.target.value : e;
+      onChange(value);
     }
   };
 
