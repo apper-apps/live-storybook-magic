@@ -13,7 +13,8 @@ const FormField = ({
   options = [],
   ...props 
 }) => {
-  const handleChange = (e) => {
+const handleChange = (e) => {
+    if (!e || !e.target) return;
     onChange(e.target.value);
   };
 
