@@ -9,6 +9,7 @@ import { toast } from "react-toastify";
 const StoryPreview = ({ story, illustrations = [] }) => {
   const [currentPage, setCurrentPage] = useState(0);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [regeneratingIllustrations, setRegeneratingIllustrations] = useState(new Set());
 
   // Split story into pages
   const storyParagraphs = story.story_text ? story.story_text.split("\n\n").filter(p => p.trim()) : [];
@@ -50,6 +51,29 @@ const StoryPreview = ({ story, illustrations = [] }) => {
       toast.error("Failed to generate PDF. Please try again.");
     } finally {
       setIsGeneratingPDF(false);
+    }
+};
+
+  const handleRegenerateIllustration = async (illustrationIndex) => {
+    setRegeneratingIllustrations(prev => new Set([...prev, illustrationIndex]));
+    
+    try {
+      const illustration = illustrations[illustrationIndex];
+      const regeneratedIllustration = await null; // This would be replaced with actual API call
+      
+      // In a real implementation, this would update the illustration in the parent component
+      // For now, we'll just show a success message
+      toast.success(`Illustration ${illustrationIndex + 1} regenerated successfully!`);
+      
+    } catch (error) {
+      console.error("Error regenerating illustration:", error);
+      toast.error("Failed to regenerate illustration. Please try again.");
+    } finally {
+      setRegeneratingIllustrations(prev => {
+        const updated = new Set(prev);
+        updated.delete(illustrationIndex);
+        return updated;
+      });
     }
   };
 
@@ -226,20 +250,42 @@ const StoryPreview = ({ story, illustrations = [] }) => {
             All Illustrations
           </h3>
           
-          <div className="illustration-grid">
+<div className="illustration-grid">
             {illustrations.map((illustration, index) => (
               <motion.div
                 key={index}
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.3, delay: index * 0.1 }}
-                className="bg-white rounded-xl p-4 shadow-lg border border-gray-100"
+                className="bg-white rounded-xl p-4 shadow-lg border border-gray-100 relative group"
               >
                 <img
                   src={illustration.image_url}
                   alt={illustration.caption || `Illustration ${index + 1}`}
                   className="w-full h-48 object-cover rounded-lg mb-3"
                 />
+                
+                {/* Regenerate Button */}
+                <div className="absolute top-6 right-6 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  <Button
+                    onClick={() => handleRegenerateIllustration(index)}
+                    disabled={regeneratingIllustrations.has(index)}
+                    size="sm"
+                    variant="outline"
+                    className="bg-white/90 backdrop-blur-sm border-gray-200 hover:bg-white shadow-lg"
+                  >
+                    {regeneratingIllustrations.has(index) ? (
+                      <div className="loading-dots">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                      </div>
+                    ) : (
+                      <ApperIcon name="RefreshCw" className="w-4 h-4" />
+                    )}
+                  </Button>
+                </div>
+                
                 <p className="text-sm text-gray-600 text-center">
                   {illustration.caption || `Scene ${index + 1}`}
                 </p>

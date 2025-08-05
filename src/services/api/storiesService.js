@@ -1,5 +1,4 @@
 import storiesData from "@/services/mockData/stories.json";
-
 class StoriesService {
   constructor() {
     this.stories = [...storiesData];
@@ -82,7 +81,7 @@ class StoriesService {
       .map(story => ({ ...story }));
   }
 
-  async searchStories(query) {
+async searchStories(query) {
     await new Promise(resolve => setTimeout(resolve, 300));
     const lowercaseQuery = query.toLowerCase();
     return this.stories
@@ -93,6 +92,23 @@ class StoriesService {
       )
       .map(story => ({ ...story }));
   }
-}
+
+  // Regenerate individual illustration
+  async regenerateIllustration(storyId, illustrationIndex, sceneDescription) {
+    await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate API delay
+    
+    // In a real implementation, this would call DALL-E API with adjusted prompt
+    const adjustedPrompt = `Regenerate illustration of ${sceneDescription}`;
+    
+    const regeneratedIllustration = {
+      scene_number: illustrationIndex + 1,
+      description: sceneDescription,
+      dalle_prompt: adjustedPrompt,
+      image_url: `https://picsum.photos/400/300?random=${Date.now()}-regenerated-${illustrationIndex}`,
+      caption: `Regenerated scene ${illustrationIndex + 1}`
+    };
+
+    return regeneratedIllustration;
+  }
 
 export const storiesService = new StoriesService();
