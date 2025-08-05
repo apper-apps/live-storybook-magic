@@ -1,21 +1,21 @@
 import "@/index.css";
 import React, { createContext, useEffect, useState } from "react";
-import { Route, BrowserRouter, Routes, useNavigate } from "react-router-dom";
+import { BrowserRouter, Route, Routes, useNavigate } from "react-router-dom";
 import { Provider, useDispatch, useSelector } from "react-redux";
 import { ToastContainer } from "react-toastify";
 import Header from "@/components/organisms/Header";
 import { clearUser, setUser } from "@/store/userSlice";
 import { store } from "@/store/store";
+import HomePage from "@/pages/HomePage";
 import Login from "@/pages/Login";
 import PromptPassword from "@/pages/PromptPassword";
 import SettingsPage from "@/pages/SettingsPage";
 import ResetPassword from "@/pages/ResetPassword";
 import Callback from "@/pages/Callback";
-import ErrorPage from "@/pages/ErrorPage";
 import Signup from "@/pages/Signup";
 import StoriesPage from "@/pages/StoriesPage";
 import CreateStoryPage from "@/pages/CreateStoryPage";
-import HomePage from "@/pages/HomePage";
+import ErrorPage from "@/pages/ErrorPage";
 // Create auth context
 export const AuthContext = createContext(null);
 
@@ -166,7 +166,7 @@ function AppContent() {
   );
 }
 
-function App() {
+function AppRoot() {
   return (
     <Provider store={store}>
       <BrowserRouter>
@@ -175,5 +175,6 @@ function App() {
     </Provider>
   );
 }
+}
 
-export default App;
+export default AppRoot;
