@@ -1,4 +1,5 @@
 import storiesData from "@/services/mockData/stories.json";
+
 class StoriesService {
   constructor() {
     this.stories = [...storiesData];
@@ -73,7 +74,7 @@ class StoriesService {
   }
 
   // Additional methods for story-specific operations
-  async getRecentStories(limit = 6) {
+async getRecentStories(limit = 6) {
     await new Promise(resolve => setTimeout(resolve, 200));
     return this.stories
       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
@@ -81,7 +82,7 @@ class StoriesService {
       .map(story => ({ ...story }));
   }
 
-async searchStories(query) {
+  async searchStories(query) {
     await new Promise(resolve => setTimeout(resolve, 300));
     const lowercaseQuery = query.toLowerCase();
     return this.stories
