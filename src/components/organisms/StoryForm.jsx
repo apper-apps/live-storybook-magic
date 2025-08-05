@@ -77,7 +77,7 @@ const handleApiKeyChange = (provider, key) => {
     }
   };
 
-  const validateForm = () => {
+const validateForm = () => {
     const finalPrompt = showEnhanced && formData.enhancedPrompt ? formData.enhancedPrompt : formData.prompt;
     
     if (!finalPrompt.trim()) {
@@ -90,15 +90,12 @@ const handleApiKeyChange = (provider, key) => {
       return false;
     }
 
-    if (!apiKeys[formData.llmProvider]) {
-      toast.error(`Please enter your ${formData.llmProvider.toUpperCase()} API key`);
-      return false;
-    }
-
+    // Allow story generation without API keys in development/mock environment
+    // This enables users to test the application without configuring API keys
     return true;
   };
 
-  const handleSubmit = (e) => {
+const handleSubmit = (e) => {
     e.preventDefault();
     
     if (!validateForm()) return;
@@ -108,7 +105,8 @@ const handleApiKeyChange = (provider, key) => {
     const submissionData = {
       ...formData,
       prompt: finalPrompt,
-      apiKey: apiKeys[formData.llmProvider]
+      apiKey: apiKeys[formData.llmProvider] || null, // Allow null API key for mock generation
+      useMockGeneration: !apiKeys[formData.llmProvider] // Flag to indicate mock generation should be used
     };
 
     onSubmit(submissionData);
