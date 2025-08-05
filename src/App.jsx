@@ -173,8 +173,7 @@ function AppRoot() {
         <AppContent />
       </BrowserRouter>
     </Provider>
-  );
-}
+);
 }
 
 export default AppRoot;
