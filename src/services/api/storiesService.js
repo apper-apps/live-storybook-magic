@@ -581,11 +581,11 @@ async regenerateIllustration(storyId, illustrationIndex, sceneDescription) {
     };
 
     const traits = [...baseTraits, ...(ageSpecificTraits[ageGroup] || ageSpecificTraits['1-2'])];
-    const selectedTraits = traits.slice(0, 3);
+const selectedTraits = traits.slice(0, 3);
     
 // Combine all available text sources for comprehensive analysis
-    const combinedText = [storyText, prompt, enhancedPrompt]
-      .filter(text => text && text.trim())
+    const combinedText = [text]
+      .filter(textItem => textItem && textItem.trim())
       .join(' ')
       .toLowerCase();
     return {
