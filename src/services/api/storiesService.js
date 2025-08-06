@@ -109,6 +109,36 @@ class StoriesService {
   // Create a new story (only includes updateable fields)
 async create(storyData) {
     try {
+      // Helper function to compress image URLs to fit within 255 character limit
+      const compressImageUrls = (urls) => {
+        if (!urls) return '';
+        if (!Array.isArray(urls)) return urls.toString().substring(0, 250);
+        
+        // Convert to JSON string
+        const jsonString = JSON.stringify(urls);
+        
+        // If within limit, return as is
+        if (jsonString.length <= 250) {
+          return jsonString;
+        }
+        
+        // Compress by taking only essential parts of URLs (filename/id)
+        const compressedUrls = urls.map(url => {
+          if (typeof url === 'string') {
+            // Extract just the filename or last segment
+            const segments = url.split('/');
+            const filename = segments[segments.length - 1];
+            // Keep only first 30 chars of filename to ensure we fit
+            return filename.substring(0, 30);
+          }
+          return url;
+        });
+        
+        const compressedJson = JSON.stringify(compressedUrls);
+        // Final safety check - truncate if still too long
+        return compressedJson.substring(0, 250);
+      };
+
       const params = {
         records: [
           {
@@ -120,7 +150,7 @@ async create(storyData) {
             enhanced_prompt: storyData.enhanced_prompt,
             llm_used: storyData.llm_used,
             story_text: storyData.story_text,
-            image_urls: Array.isArray(storyData.image_urls) ? JSON.stringify(storyData.image_urls) : storyData.image_urls,
+            image_urls: compressImageUrls(storyData.image_urls),
             character_count: parseInt(storyData.character_count) || 0,
             illustration_count: parseInt(storyData.illustration_count) || 0,
             illustration_style: storyData.illustration_style,
@@ -174,6 +204,36 @@ async create(storyData) {
   // Update an existing story (only includes updateable fields)
 async update(storyId, updateData) {
     try {
+      // Helper function to compress image URLs to fit within 255 character limit
+      const compressImageUrls = (urls) => {
+        if (!urls) return '';
+        if (!Array.isArray(urls)) return urls.toString().substring(0, 250);
+        
+        // Convert to JSON string
+        const jsonString = JSON.stringify(urls);
+        
+        // If within limit, return as is
+        if (jsonString.length <= 250) {
+          return jsonString;
+        }
+        
+        // Compress by taking only essential parts of URLs (filename/id)
+        const compressedUrls = urls.map(url => {
+          if (typeof url === 'string') {
+            // Extract just the filename or last segment
+            const segments = url.split('/');
+            const filename = segments[segments.length - 1];
+            // Keep only first 30 chars of filename to ensure we fit
+            return filename.substring(0, 30);
+          }
+          return url;
+        });
+        
+        const compressedJson = JSON.stringify(compressedUrls);
+        // Final safety check - truncate if still too long
+        return compressedJson.substring(0, 250);
+      };
+
       const params = {
         records: [
           {
@@ -187,7 +247,7 @@ async update(storyId, updateData) {
             ...(updateData.llm_used !== undefined && { llm_used: updateData.llm_used }),
             ...(updateData.story_text !== undefined && { story_text: updateData.story_text }),
             ...(updateData.image_urls !== undefined && { 
-              image_urls: Array.isArray(updateData.image_urls) ? JSON.stringify(updateData.image_urls) : updateData.image_urls 
+              image_urls: compressImageUrls(updateData.image_urls)
             }),
             ...(updateData.character_count !== undefined && { character_count: parseInt(updateData.character_count) }),
             ...(updateData.illustration_count !== undefined && { illustration_count: parseInt(updateData.illustration_count) }),
