@@ -484,24 +484,32 @@ async regenerateIllustration(storyId, illustrationIndex, sceneDescription) {
     }
   }
 
-  // Extract key story elements for contextual illustration generation
-  extractStoryElements(storyText, prompt) {
-    const text = (storyText + ' ' + prompt).toLowerCase();
+// Extract key story elements for contextual illustration generation with enhanced prompt processing
+  extractStoryElements(storyText, prompt, enhancedPrompt = null) {
+    // Combine all available text sources for comprehensive analysis
+    const combinedText = [storyText, prompt, enhancedPrompt]
+      .filter(text => text && text.trim())
+      .join(' ')
+      .toLowerCase();
     
     return {
-      characters: this.extractCharacterTypes(text),
-      settings: this.extractSettingTypes(text),
-      mood: this.extractMoodTypes(text),
-      actions: this.extractActionTypes(text)
+      characters: this.extractCharacterTypes(combinedText),
+      settings: this.extractSettingTypes(combinedText),
+      mood: this.extractMoodTypes(combinedText),
+      actions: this.extractActionTypes(combinedText),
+      themes: this.extractThemeTypes(combinedText),
+      goals: this.extractUserGoals(combinedText)
     };
   }
 
   extractCharacterTypes(text) {
     const characters = [];
     const characterMap = {
-      'bunny': 'rabbit', 'dragon': 'dragon', 'princess': 'princess', 'knight': 'knight',
-      'girl': 'child', 'boy': 'child', 'cat': 'cat', 'dog': 'dog', 'fox': 'fox',
-      'bear': 'bear', 'bird': 'bird', 'owl': 'owl', 'mouse': 'mouse'
+      'bunny': 'rabbit', 'rabbit': 'rabbit', 'dragon': 'dragon', 'princess': 'princess', 
+      'knight': 'knight', 'girl': 'child', 'boy': 'child', 'cat': 'cat', 'dog': 'dog', 
+      'fox': 'fox', 'bear': 'bear', 'bird': 'bird', 'owl': 'owl', 'mouse': 'mouse',
+      'fairy': 'fairy', 'wizard': 'wizard', 'unicorn': 'unicorn', 'mermaid': 'mermaid',
+      'pirate': 'pirate', 'astronaut': 'astronaut', 'detective': 'detective'
     };
     
     Object.keys(characterMap).forEach(key => {
@@ -514,9 +522,13 @@ async regenerateIllustration(storyId, illustrationIndex, sceneDescription) {
   extractSettingTypes(text) {
     const settings = [];
     const settingMap = {
-      'forest': 'woodland', 'castle': 'castle', 'ocean': 'seaside', 'mountain': 'mountain',
-      'garden': 'garden', 'school': 'school', 'home': 'house', 'village': 'village',
-      'magical': 'enchanted', 'space': 'cosmic', 'underwater': 'underwater'
+      'forest': 'woodland', 'woods': 'woodland', 'castle': 'castle', 'palace': 'castle',
+      'ocean': 'seaside', 'sea': 'seaside', 'beach': 'seaside', 'mountain': 'mountain',
+      'garden': 'garden', 'school': 'school', 'classroom': 'school', 'home': 'house', 
+      'house': 'house', 'village': 'village', 'town': 'village', 'city': 'city',
+      'magical': 'enchanted', 'enchanted': 'enchanted', 'space': 'cosmic', 
+      'underwater': 'underwater', 'farm': 'farm', 'jungle': 'jungle', 
+      'desert': 'desert', 'island': 'island', 'cave': 'cave'
     };
     
     Object.keys(settingMap).forEach(key => {
@@ -527,10 +539,12 @@ async regenerateIllustration(storyId, illustrationIndex, sceneDescription) {
   }
 
   extractMoodTypes(text) {
-    if (text.includes('adventure') || text.includes('exciting')) return 'adventure';
-    if (text.includes('peaceful') || text.includes('calm')) return 'peaceful';
-    if (text.includes('magical') || text.includes('wonder')) return 'magical';
-    if (text.includes('happy') || text.includes('joy')) return 'joyful';
+    if (text.includes('adventure') || text.includes('exciting') || text.includes('thrilling')) return 'adventure';
+    if (text.includes('peaceful') || text.includes('calm') || text.includes('serene')) return 'peaceful';
+    if (text.includes('magical') || text.includes('wonder') || text.includes('mystical')) return 'magical';
+    if (text.includes('happy') || text.includes('joy') || text.includes('cheerful')) return 'joyful';
+    if (text.includes('mysterious') || text.includes('secret') || text.includes('hidden')) return 'mysterious';
+    if (text.includes('funny') || text.includes('silly') || text.includes('humorous')) return 'humorous';
     return 'whimsical';
   }
 
@@ -539,7 +553,10 @@ async regenerateIllustration(storyId, illustrationIndex, sceneDescription) {
     const actionMap = {
       'flying': 'flight', 'running': 'running', 'swimming': 'swimming',
       'dancing': 'dancing', 'playing': 'playing', 'exploring': 'exploration',
-      'cooking': 'cooking', 'reading': 'reading', 'singing': 'musical'
+      'cooking': 'cooking', 'reading': 'reading', 'singing': 'musical',
+      'building': 'construction', 'painting': 'artistic', 'climbing': 'climbing',
+      'racing': 'racing', 'helping': 'helping', 'saving': 'rescue',
+      'discovering': 'discovery', 'learning': 'learning'
     };
     
     Object.keys(actionMap).forEach(key => {
@@ -549,29 +566,80 @@ async regenerateIllustration(storyId, illustrationIndex, sceneDescription) {
     return actions.length > 0 ? actions : ['adventure'];
   }
 
-  // Generate scene-specific context for illustration
+  extractThemeTypes(text) {
+    const themes = [];
+    const themeMap = {
+      'friendship': 'friendship', 'friend': 'friendship', 'courage': 'courage', 'brave': 'courage',
+      'kindness': 'kindness', 'kind': 'kindness', 'love': 'love', 'family': 'family',
+      'learning': 'education', 'school': 'education', 'nature': 'nature', 'environment': 'nature',
+      'teamwork': 'cooperation', 'together': 'cooperation', 'helping': 'helpfulness',
+      'dream': 'dreams', 'wish': 'dreams', 'grow': 'growth', 'change': 'transformation'
+    };
+    
+    Object.keys(themeMap).forEach(key => {
+      if (text.includes(key)) themes.push(themeMap[key]);
+    });
+    
+    return themes.length > 0 ? themes : ['adventure'];
+  }
+
+  extractUserGoals(text) {
+    // Analyze enhanced prompts for user intentions and goals
+    const goals = [];
+    
+    if (text.includes('teach') || text.includes('learn') || text.includes('lesson')) {
+      goals.push('educational');
+    }
+    if (text.includes('bedtime') || text.includes('sleep') || text.includes('calm')) {
+      goals.push('bedtime');
+    }
+    if (text.includes('inspire') || text.includes('motivate') || text.includes('encourage')) {
+      goals.push('inspirational');
+    }
+    if (text.includes('fun') || text.includes('entertain') || text.includes('laugh')) {
+      goals.push('entertainment');
+    }
+    if (text.includes('moral') || text.includes('value') || text.includes('character')) {
+      goals.push('moral');
+    }
+    
+    return goals.length > 0 ? goals : ['general'];
+  }
+
+  // Generate enhanced scene-specific context for illustration
   generateSceneContext(elements, sceneIndex, style) {
     const character = elements.characters[0] || 'character';
     const setting = elements.settings[0] || 'landscape';
     const mood = elements.mood;
     const action = elements.actions[0] || 'adventure';
+    const theme = elements.themes ? elements.themes[0] : 'friendship';
+    const goal = elements.goals ? elements.goals[0] : 'general';
     
+    // Enhanced scene descriptions based on user goals and story elements
     const sceneDescriptions = [
-      `${character}_in_${setting}_${style}_intro`,
-      `${character}_${action}_${style}_scene`,
-      `${character}_discovery_${setting}_${style}`,
-      `${character}_challenge_${mood}_${style}`,
-      `${character}_triumph_${setting}_${style}`,
-      `${character}_friendship_${style}_moment`,
-      `${character}_learning_${setting}_${style}`,
-      `${character}_resolution_${mood}_${style}`
+      `${character}_introduction_in_${setting}_${style}_${goal}`,
+      `${character}_${action}_${style}_${mood}_scene`,
+      `${character}_discovery_${setting}_${style}_${theme}`,
+      `${character}_challenge_${mood}_${style}_growth`,
+      `${character}_${theme}_moment_${setting}_${style}`,
+      `${character}_triumph_${setting}_${style}_${goal}`,
+      `${character}_friendship_${style}_${theme}_moment`,
+      `${character}_resolution_${mood}_${style}_accomplished`
     ];
     
     const selectedDescription = sceneDescriptions[sceneIndex % sceneDescriptions.length];
     
     return {
       description: selectedDescription,
-      seed: `${selectedDescription}_${Date.now()}`
+      seed: `${selectedDescription}_${Date.now()}`,
+      context: {
+        character,
+        setting,
+        mood,
+        action,
+        theme,
+        goal
+      }
     };
   }
 }

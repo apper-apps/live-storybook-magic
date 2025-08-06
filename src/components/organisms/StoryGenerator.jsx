@@ -12,41 +12,61 @@ const StoryGenerator = ({ onStoryGenerated }) => {
   const [generationProgress, setGenerationProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState("");
 
-  const generateStory = async (formData) => {
+const generateStory = async (formData) => {
     setIsGenerating(true);
     setGenerationProgress(0);
     setCurrentStep("Preparing to create your story...");
 
     try {
-      // Step 1: Initialize generation
+      // Step 1: Initialize generation with enhanced prompt processing
+      setCurrentStep("Analyzing your story goals...");
+      setGenerationProgress(5);
+      await new Promise(resolve => setTimeout(resolve, 800));
+
+      // Determine the best prompt to use for background processing
+      const finalPrompt = formData.enhancedPrompt && formData.enhancedPrompt.trim() 
+        ? formData.enhancedPrompt 
+        : formData.prompt;
+
+      // Step 2: Connect to AI model
       setCurrentStep("Connecting to AI model...");
-      setGenerationProgress(10);
+      setGenerationProgress(15);
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      // Step 2: Generate story text
-      setCurrentStep("Writing your magical story...");
-      setGenerationProgress(30);
+      // Step 3: Generate story text with enhanced prompt processing
+      setCurrentStep("Writing your magical story with enhanced creativity...");
+      setGenerationProgress(35);
       
-      // Simulate story generation with the selected LLM
-      const storyData = await simulateStoryGeneration(formData);
+      // Pass both original and enhanced prompts for better context
+      const storyData = await simulateStoryGeneration({
+        ...formData,
+        finalPrompt,
+        hasEnhancedPrompt: !!formData.enhancedPrompt
+      });
       
-      // Step 3: Extract scenes for illustrations
+      // Step 4: Extract scenes for illustrations
       setCurrentStep("Identifying key scenes for illustrations...");
-      setGenerationProgress(50);
+      setGenerationProgress(55);
       await new Promise(resolve => setTimeout(resolve, 1500));
 
-      // Step 4: Generate illustrations
-      setCurrentStep("Creating beautiful illustrations...");
-      setGenerationProgress(70);
+      // Step 5: Generate contextual illustrations
+      setCurrentStep("Creating beautiful illustrations that match your story...");
+      setGenerationProgress(75);
       
-      const illustrations = await simulateIllustrationGeneration(formData.illustrationCount, formData.illustrationStyle);
+      const illustrations = await simulateIllustrationGeneration(
+        formData.illustrationCount, 
+        formData.illustrationStyle,
+        storyData.story_text,
+        finalPrompt
+      );
       
-      // Step 5: Save to database
+      // Step 6: Save to database
       setCurrentStep("Saving your story...");
       setGenerationProgress(90);
       
       const completeStory = {
         ...storyData,
+        enhanced_prompt: formData.enhancedPrompt || null,
         image_urls: illustrations.map(ill => ill.image_url),
         llm_used: formData.llmProvider,
         character_count: formData.characterCount,
@@ -56,12 +76,12 @@ const StoryGenerator = ({ onStoryGenerated }) => {
 
       const savedStory = await storiesService.create(completeStory);
       
-      // Step 6: Complete
+      // Step 7: Complete
       setCurrentStep("Story created successfully!");
       setGenerationProgress(100);
       await new Promise(resolve => setTimeout(resolve, 500));
 
-      toast.success("Your magical story has been created!");
+      toast.success("Your magical story has been created with enhanced creativity!");
       onStoryGenerated(savedStory, illustrations);
 
     } catch (error) {
@@ -87,26 +107,99 @@ const StoryGenerator = ({ onStoryGenerated }) => {
     };
   };
 
-  const simulateIllustrationGeneration = async (count, style) => {
+const simulateIllustrationGeneration = async (count, style, storyText = '', prompt = '') => {
     // This would be replaced with actual DALL-E API calls
     const illustrations = [];
     
+    // Extract story elements for more contextual illustrations
+    const combinedText = `${storyText} ${prompt}`.toLowerCase();
+    const storyElements = {
+      characters: extractStoryCharacters(combinedText),
+      settings: extractStorySettings(combinedText),
+      mood: extractStoryMood(combinedText)
+    };
+    
     for (let i = 0; i < count; i++) {
       await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Create contextual scene descriptions based on story content
+      const sceneContext = generateSceneDescription(storyElements, i, style);
+      
       illustrations.push({
         scene_number: i + 1,
-        description: `Scene ${i + 1} description`,
-        dalle_prompt: `A ${style} illustration for scene ${i + 1}`,
-        image_url: `https://picsum.photos/400/300?random=${Date.now()}-${i}`,
-        caption: `Illustration ${i + 1}`
+        description: sceneContext.description,
+        dalle_prompt: `A ${style} illustration showing ${sceneContext.prompt}`,
+        image_url: `https://picsum.photos/400/300?random=${sceneContext.seed}&style=${style}`,
+        caption: sceneContext.caption
       });
       
       // Update progress for illustration generation
-      const illustrationProgress = 70 + (20 * (i + 1) / count);
+      const illustrationProgress = 75 + (15 * (i + 1) / count);
       setGenerationProgress(illustrationProgress);
     }
     
     return illustrations;
+  };
+
+  // Helper functions for contextual illustration generation
+  const extractStoryCharacters = (text) => {
+    const characters = ['bunny', 'dragon', 'princess', 'knight', 'cat', 'dog', 'bird', 'fox'];
+    return characters.find(char => text.includes(char)) || 'character';
+  };
+
+  const extractStorySettings = (text) => {
+    const settings = ['forest', 'castle', 'garden', 'ocean', 'mountain', 'village', 'magical'];
+    return settings.find(setting => text.includes(setting)) || 'enchanted land';
+  };
+
+  const extractStoryMood = (text) => {
+    if (text.includes('adventure')) return 'adventurous';
+    if (text.includes('peaceful')) return 'peaceful';
+    if (text.includes('magical')) return 'magical';
+    return 'whimsical';
+  };
+
+  const generateSceneDescription = (elements, sceneIndex, style) => {
+    const { characters, settings, mood } = elements;
+    
+    const sceneTypes = [
+      { 
+        description: `${characters} in ${settings}`, 
+        prompt: `${characters} exploring a ${mood} ${settings}`,
+        caption: `Our hero begins the journey in ${settings}`
+      },
+      { 
+        description: `${characters} discovers something special`, 
+        prompt: `${characters} finding a magical discovery in ${settings}`,
+        caption: `A wonderful discovery awaits`
+      },
+      { 
+        description: `${characters} faces a challenge`, 
+        prompt: `${characters} overcoming obstacles with courage in ${settings}`,
+        caption: `Facing challenges with bravery`
+      },
+      { 
+        description: `${characters} makes friends`, 
+        prompt: `${characters} meeting new friends in a ${mood} scene`,
+        caption: `New friendships bloom`
+      },
+      { 
+        description: `${characters} learns something important`, 
+        prompt: `${characters} having a moment of understanding and growth`,
+        caption: `An important lesson is learned`
+      },
+      { 
+        description: `${characters} celebrates success`, 
+        prompt: `${characters} celebrating triumph in ${settings}`,
+        caption: `Celebrating the victory`
+      }
+    ];
+    
+    const scene = sceneTypes[sceneIndex % sceneTypes.length];
+    return {
+      ...scene,
+      seed: `${characters}_${settings}_${sceneIndex}_${Date.now()}`
+    };
   };
 
   const generateTitleFromPrompt = (prompt) => {
