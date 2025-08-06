@@ -16,7 +16,9 @@ const [formData, setFormData] = useState({
     characterCount: 800,
     illustrationCount: 10,
     llmProvider: "",
-    illustrationStyle: "cartoon"
+    illustrationStyle: "cartoon",
+    targetAgeGroup: "1-2",
+    characterName: ""
   });
 
 const [apiKeys, setApiKeys] = useState({
@@ -39,7 +41,14 @@ const [apiKeys, setApiKeys] = useState({
     { value: "google", label: "Google Gemini 1.5" }
   ];
 
-const styleOptions = [
+const ageGroupOptions = [
+    { value: "1-2", label: "Ages 1-2 (Toddlers)" },
+    { value: "3-5", label: "Ages 3-5 (Preschool)" },
+    { value: "6-8", label: "Ages 6-8 (Early Elementary)" },
+    { value: "9-12", label: "Ages 9-12 (Middle Grade)" }
+  ];
+
+  const styleOptions = [
     { value: "cartoon", label: "Cartoon" },
     { value: "watercolor", label: "Watercolor" },
     { value: "sketch", label: "Sketch" },
@@ -103,11 +112,13 @@ const handleSubmit = (e) => {
 
     const finalPrompt = showEnhanced && formData.enhancedPrompt ? formData.enhancedPrompt : formData.prompt;
     
-    const submissionData = {
+const submissionData = {
       ...formData,
       prompt: finalPrompt,
       apiKey: apiKeys[formData.llmProvider] || null, // Allow null API key for mock generation
-      useMockGeneration: !apiKeys[formData.llmProvider] // Flag to indicate mock generation should be used
+      useMockGeneration: !apiKeys[formData.llmProvider], // Flag to indicate mock generation should be used
+      target_age_group: formData.targetAgeGroup,
+      character_name: formData.characterName || null
     };
 
     onSubmit(submissionData);
@@ -210,6 +221,38 @@ const handleSubmit = (e) => {
           </div>
 
           {/* Story Settings */}
+<div className="space-y-6">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-full flex items-center justify-center">
+                <ApperIcon name="Users" className="w-4 h-4 text-white" />
+              </div>
+              <h3 className="font-display text-xl font-bold text-gray-900">
+                Character & Age Settings
+              </h3>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FormField
+                type="select"
+                label="Target Age Group"
+                value={formData.targetAgeGroup}
+                onChange={(value) => handleFieldChange("targetAgeGroup", value)}
+                options={ageGroupOptions}
+                helpText="Choose the age group for appropriate content and vocabulary"
+              />
+
+              <FormField
+                type="text"
+                label="Main Character Name (Optional)"
+                value={formData.characterName}
+                onChange={(value) => handleFieldChange("characterName", value)}
+                placeholder="e.g., Bouncy, Luna, Max"
+                helpText="Leave empty to auto-generate a fitting name"
+              />
+            </div>
+          </div>
+
+          {/* Story Settings */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="flex items-center space-x-3 md:col-span-3 mb-4">
               <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-full flex items-center justify-center">
@@ -225,9 +268,10 @@ const handleSubmit = (e) => {
               label="Character Count"
               value={formData.characterCount}
               onChange={(value) => handleFieldChange("characterCount", parseInt(value) || 800)}
-              min={500}
+              min={100}
               max={1500}
-              step={100}
+              step={50}
+              helpText="Shorter for younger children"
             />
 
             <FormField
@@ -235,12 +279,12 @@ const handleSubmit = (e) => {
               label="Number of Illustrations"
               value={formData.illustrationCount}
               onChange={(value) => handleFieldChange("illustrationCount", parseInt(value) || 10)}
-              min={5}
+              min={8}
               max={15}
               step={1}
             />
 
-<FormField
+            <FormField
               type="select"
               label="Illustration Style"
               value={formData.illustrationStyle}

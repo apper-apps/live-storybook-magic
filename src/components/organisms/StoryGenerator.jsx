@@ -15,15 +15,15 @@ const StoryGenerator = ({ onStoryGenerated }) => {
 const generateStory = async (formData) => {
     setIsGenerating(true);
     setGenerationProgress(0);
-    setCurrentStep("Preparing to create your story...");
+    setCurrentStep("Preparing to create your magical story...");
 
     try {
-      // Step 1: Initialize generation with enhanced prompt processing
-      setCurrentStep("Analyzing your story goals...");
+      // Step 1: Storybook Magic initialization with age-appropriate processing
+      setCurrentStep(`Analyzing story for ages ${formData.target_age_group}...`);
       setGenerationProgress(5);
       await new Promise(resolve => setTimeout(resolve, 800));
 
-      // Determine the best prompt to use for background processing
+      // Determine the best prompt to use for character-consistent processing
       const finalPrompt = formData.enhancedPrompt && formData.enhancedPrompt.trim() 
         ? formData.enhancedPrompt 
         : formData.prompt;
@@ -33,35 +33,39 @@ const generateStory = async (formData) => {
       setGenerationProgress(15);
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      // Step 3: Generate story text with enhanced prompt processing
-      setCurrentStep("Writing your magical story with enhanced creativity...");
+      // Step 3: Generate age-appropriate story with character development
+      setCurrentStep(`Creating story for ${formData.target_age_group} year olds...`);
       setGenerationProgress(35);
       
-      // Pass both original and enhanced prompts for better context
+      // Pass age group and character info for appropriate content generation
       const storyData = await simulateStoryGeneration({
         ...formData,
         finalPrompt,
-        hasEnhancedPrompt: !!formData.enhancedPrompt
+        hasEnhancedPrompt: !!formData.enhancedPrompt,
+        target_age_group: formData.target_age_group,
+        character_name: formData.character_name
       });
       
-      // Step 4: Extract scenes for illustrations
-      setCurrentStep("Identifying key scenes for illustrations...");
+      // Step 4: Extract story elements for character consistency
+      setCurrentStep("Developing character consistency across illustrations...");
       setGenerationProgress(55);
       await new Promise(resolve => setTimeout(resolve, 1500));
 
-      // Step 5: Generate contextual illustrations
-      setCurrentStep("Creating beautiful illustrations that match your story...");
+      // Step 5: Generate character-consistent illustrations
+      setCurrentStep("Creating illustrations with consistent character appearance...");
       setGenerationProgress(75);
       
       const illustrations = await simulateIllustrationGeneration(
         formData.illustrationCount, 
         formData.illustrationStyle,
         storyData.story_text,
-        finalPrompt
+        finalPrompt,
+        formData.target_age_group,
+        formData.character_name
       );
       
-      // Step 6: Save to database
-      setCurrentStep("Saving your story...");
+      // Step 6: Save complete Storybook Magic data
+      setCurrentStep("Saving your personalized storybook...");
       setGenerationProgress(90);
       
       const completeStory = {
@@ -71,22 +75,26 @@ const generateStory = async (formData) => {
         llm_used: formData.llmProvider,
         character_count: formData.characterCount,
         illustration_count: formData.illustrationCount,
-        illustration_style: formData.illustrationStyle
+        illustration_style: formData.illustrationStyle,
+        target_age_group: formData.target_age_group,
+        character_name: storyData.character_name, // Use generated or provided name
+        character_appearance: storyData.character_appearance,
+        character_personality: storyData.character_personality
       };
 
       const savedStory = await storiesService.create(completeStory);
       
       // Step 7: Complete
-      setCurrentStep("Story created successfully!");
+      setCurrentStep("Storybook Magic complete!");
       setGenerationProgress(100);
       await new Promise(resolve => setTimeout(resolve, 500));
 
-      toast.success("Your magical story has been created with enhanced creativity!");
+      toast.success(`Your magical ${formData.target_age_group} story has been created with consistent character illustrations!`);
       onStoryGenerated(savedStory, illustrations);
 
     } catch (error) {
       console.error("Error generating story:", error);
-      toast.error("Failed to generate story. Please check your API key and try again.");
+      toast.error("Failed to generate story. Please check your settings and try again.");
     } finally {
       setIsGenerating(false);
       setGenerationProgress(0);
@@ -95,42 +103,49 @@ const generateStory = async (formData) => {
   };
 
   // Simulate story generation (replace with actual API calls)
-  const simulateStoryGeneration = async (formData) => {
-    // This would be replaced with actual API calls to the selected LLM
+const simulateStoryGeneration = async (formData) => {
+    // Storybook Magic: Generate age-appropriate story with character consistency
     await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    const storyElements = storiesService.extractStoryElements(
+      null, 
+      formData.finalPrompt, 
+      formData.enhancedPrompt,
+      formData.target_age_group,
+      formData.character_name
+    );
     
     return {
       prompt: formData.prompt,
       enhanced_prompt: formData.enhancedPrompt || formData.prompt,
-      title: generateTitleFromPrompt(formData.prompt),
-      story_text: generateSampleStory(formData.prompt, formData.characterCount)
+      title: generateTitleFromPrompt(formData.finalPrompt, storyElements.mainCharacter),
+      story_text: generateAgeAppropriateStory(formData.finalPrompt, formData.characterCount, formData.target_age_group, storyElements.mainCharacter),
+      character_name: storyElements.mainCharacter,
+      character_appearance: storyElements.characterAppearance,
+      character_personality: storyElements.characterPersonality
     };
   };
 
-const simulateIllustrationGeneration = async (count, style, storyText = '', prompt = '') => {
-    // This would be replaced with actual DALL-E API calls
+const simulateIllustrationGeneration = async (count, style, storyText = '', prompt = '', ageGroup = '1-2', characterName = null) => {
+    // Storybook Magic: Generate consistent character illustrations
     const illustrations = [];
     
-    // Extract story elements for more contextual illustrations
-    const combinedText = `${storyText} ${prompt}`.toLowerCase();
-    const storyElements = {
-      characters: extractStoryCharacters(combinedText),
-      settings: extractStorySettings(combinedText),
-      mood: extractStoryMood(combinedText)
-    };
+    // Extract comprehensive story elements for character consistency
+    const storyElements = storiesService.extractStoryElements(storyText, prompt, null, ageGroup, characterName);
     
     for (let i = 0; i < count; i++) {
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Create contextual scene descriptions based on story content
-      const sceneContext = generateSceneDescription(storyElements, i, style);
+      // Generate age-appropriate scene context with consistent character
+      const sceneContext = storiesService.generateSceneContext(storyElements, i, style, ageGroup);
       
       illustrations.push({
         scene_number: i + 1,
         description: sceneContext.description,
-        dalle_prompt: `A ${style} illustration showing ${sceneContext.prompt}`,
-        image_url: `https://picsum.photos/400/300?random=${sceneContext.seed}&style=${style}`,
-        caption: sceneContext.caption
+        dalle_prompt: sceneContext.prompt,
+        image_url: `https://picsum.photos/400/300?random=${sceneContext.seed}&character=${characterName}&age=${ageGroup}`,
+        caption: sceneContext.caption,
+        character_context: sceneContext.context
       });
       
       // Update progress for illustration generation
@@ -142,8 +157,8 @@ const simulateIllustrationGeneration = async (count, style, storyText = '', prom
   };
 
   // Helper functions for contextual illustration generation
-  const extractStoryCharacters = (text) => {
-    const characters = ['bunny', 'dragon', 'princess', 'knight', 'cat', 'dog', 'bird', 'fox'];
+const extractStoryCharacters = (text) => {
+    const characters = ['bunny', 'dragon', 'princess', 'knight', 'cat', 'dog', 'bird', 'fox', 'puppy', 'kitten'];
     return characters.find(char => text.includes(char)) || 'character';
   };
 
@@ -161,69 +176,117 @@ const simulateIllustrationGeneration = async (count, style, storyText = '', prom
 
   const generateSceneDescription = (elements, sceneIndex, style) => {
     const { characters, settings, mood } = elements;
+// Storybook Magic: Age-appropriate scene generation with character consistency
+    const ageAppropriateScenes = {
+      '1-2': [
+        { 
+          description: `${characters} waking up happily`, 
+          prompt: `${characters} with consistent appearance waking up in a cozy ${settings}, ${mood} mood, simple shapes, soft colors`,
+          caption: `${characters} starts the day`
+        },
+        { 
+          description: `${characters} exploring safely`, 
+          prompt: `${characters} with same character design exploring a safe ${settings}, gentle ${mood} atmosphere`,
+          caption: `Gentle exploration begins`
+        },
+        { 
+          description: `${characters} making a friend`, 
+          prompt: `${characters} meeting a friendly character in ${settings}, warm and ${mood}`,
+          caption: `A new friend appears`
+        },
+        { 
+          description: `${characters} playing happily`, 
+          prompt: `${characters} playing safely in ${settings}, ${mood} and joyful`,
+          caption: `Playtime is fun`
+        },
+        { 
+          description: `${characters} resting peacefully`, 
+          prompt: `${characters} resting contentedly in ${settings}, calm and peaceful`,
+          caption: `Time to rest`
+        }
+      ],
+      '3-5': [
+        { 
+          description: `${characters} beginning an adventure`, 
+          prompt: `${characters} with consistent character design starting an adventure in ${settings}, ${mood} and excited`,
+          caption: `The adventure begins`
+        },
+        { 
+          description: `${characters} discovering something wonderful`, 
+          prompt: `${characters} finding something magical in ${settings}, sense of wonder and ${mood}`,
+          caption: `A magical discovery`
+        },
+        { 
+          description: `${characters} helping others`, 
+          prompt: `${characters} helping friends in ${settings}, kind and ${mood}`,
+          caption: `Helping friends together`
+        },
+        { 
+          description: `${characters} solving a problem`, 
+          prompt: `${characters} thinking and solving a challenge in ${settings}, determined and ${mood}`,
+          caption: `Problems can be solved`
+        },
+        { 
+          description: `${characters} celebrating success`, 
+          prompt: `${characters} celebrating with friends in ${settings}, happy and ${mood}`,
+          caption: `Success feels wonderful`
+        }
+      ]
+    };
+
+    const scenes = ageAppropriateScenes['1-2'] || ageAppropriateScenes['1-2']; // Default to toddler-appropriate
+    const scene = scenes[sceneIndex % scenes.length];
     
-    const sceneTypes = [
-      { 
-        description: `${characters} in ${settings}`, 
-        prompt: `${characters} exploring a ${mood} ${settings}`,
-        caption: `Our hero begins the journey in ${settings}`
-      },
-      { 
-        description: `${characters} discovers something special`, 
-        prompt: `${characters} finding a magical discovery in ${settings}`,
-        caption: `A wonderful discovery awaits`
-      },
-      { 
-        description: `${characters} faces a challenge`, 
-        prompt: `${characters} overcoming obstacles with courage in ${settings}`,
-        caption: `Facing challenges with bravery`
-      },
-      { 
-        description: `${characters} makes friends`, 
-        prompt: `${characters} meeting new friends in a ${mood} scene`,
-        caption: `New friendships bloom`
-      },
-      { 
-        description: `${characters} learns something important`, 
-        prompt: `${characters} having a moment of understanding and growth`,
-        caption: `An important lesson is learned`
-      },
-      { 
-        description: `${characters} celebrates success`, 
-        prompt: `${characters} celebrating triumph in ${settings}`,
-        caption: `Celebrating the victory`
-      }
-    ];
-    
-    const scene = sceneTypes[sceneIndex % sceneTypes.length];
     return {
       ...scene,
       seed: `${characters}_${settings}_${sceneIndex}_${Date.now()}`
     };
   };
 
-  const generateTitleFromPrompt = (prompt) => {
+const generateTitleFromPrompt = (prompt, characterName) => {
+    const character = characterName || 'Our Friend';
     const words = prompt.split(" ");
-    const keyWords = words.slice(0, 4).join(" ");
-    return `The Story of ${keyWords}`;
+    const keyWords = words.slice(0, 3).join(" ");
+    return `${character}'s ${keyWords} Adventure`;
   };
+const generateAgeAppropriateStory = (prompt, characterCount, ageGroup, characterName) => {
+    const character = characterName || 'our friend';
+    
+    const ageStoryTemplates = {
+      '1-2': `Once upon a time, there was ${character}. ${character} lived in a happy place. 
 
-  const generateSampleStory = (prompt, characterCount) => {
-    // Generate a sample story based on the prompt
-    const baseStory = `Once upon a time, there was a magical adventure that began with ${prompt.toLowerCase()}. 
+${character} liked to ${prompt.toLowerCase()}. Every day was full of wonder and joy.
 
-The story unfolded in a wonderful land where anything was possible. Our brave characters embarked on an incredible journey filled with friendship, discovery, and wonder.
+${character} made friends and played safely. When ${character} felt tired, it was time to rest.
 
-Through challenges and triumphs, they learned valuable lessons about courage, kindness, and the power of believing in themselves.
+${character} was loved and happy. The end.`,
 
-As the sun set on their adventure, they knew that this was just the beginning of many more magical stories to come.
+      '3-5': `Once upon a time, there was a wonderful ${character} who loved to ${prompt.toLowerCase()}.
 
-And they all lived happily ever after, with hearts full of joy and memories that would last forever.`;
+${character} went on a gentle adventure and met friendly characters along the way. Together, they explored and discovered amazing things.
+
+When ${character} faced a small problem, friends helped solve it with kindness and creativity.
+
+${character} learned that friendship, courage, and kindness make every day special. And they all lived happily ever after!`,
+
+      '6-8': `In a magical land, there lived ${character}, who had a special dream to ${prompt.toLowerCase()}.
+
+${character} embarked on an exciting journey filled with wonderful discoveries and new friendships. Along the way, ${character} learned important lessons about bravery, kindness, and helping others.
+
+Through challenges and victories, ${character} grew wiser and more confident, knowing that with determination and friendship, anything is possible.
+
+The adventure showed ${character} that the greatest magic comes from believing in yourself and caring for others.`
+    };
+
+    let baseStory = ageStoryTemplates[ageGroup] || ageStoryTemplates['1-2'];
 
     // Adjust length to match requested character count
     if (baseStory.length < characterCount) {
-      const additionalText = " The adventure continued with even more exciting discoveries and heartwarming moments that brought everyone closer together.";
-      return baseStory + additionalText.repeat(Math.ceil((characterCount - baseStory.length) / additionalText.length));
+      const additionalText = ageGroup === '1-2' 
+        ? ` ${character} played more and felt happy.`
+        : ` The adventure continued with more wonderful moments of friendship and discovery.`;
+      const repeat = Math.ceil((characterCount - baseStory.length) / additionalText.length);
+      baseStory += additionalText.repeat(repeat);
     }
     
     return baseStory.substring(0, characterCount);

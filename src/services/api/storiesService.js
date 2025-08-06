@@ -17,7 +17,7 @@ class StoriesService {
   async getAll() {
     try {
       const params = {
-        fields: [
+fields: [
           { field: { Name: "Name" } },
           { field: { Name: "Tags" } },
           { field: { Name: "user_id" } },
@@ -32,6 +32,10 @@ class StoriesService {
           { field: { Name: "title" } },
           { field: { Name: "created_at" } },
           { field: { Name: "pdf_url" } },
+          { field: { Name: "target_age_group" } },
+          { field: { Name: "character_name" } },
+          { field: { Name: "character_appearance" } },
+          { field: { Name: "character_personality" } },
           { field: { Name: "CreatedOn" } },
           { field: { Name: "ModifiedOn" } }
         ],
@@ -67,7 +71,7 @@ class StoriesService {
   async getById(storyId) {
     try {
       const params = {
-        fields: [
+fields: [
           { field: { Name: "Name" } },
           { field: { Name: "Tags" } },
           { field: { Name: "user_id" } },
@@ -82,6 +86,10 @@ class StoriesService {
           { field: { Name: "title" } },
           { field: { Name: "created_at" } },
           { field: { Name: "pdf_url" } },
+          { field: { Name: "target_age_group" } },
+          { field: { Name: "character_name" } },
+          { field: { Name: "character_appearance" } },
+          { field: { Name: "character_personality" } },
           { field: { Name: "CreatedOn" } },
           { field: { Name: "ModifiedOn" } }
         ]
@@ -147,7 +155,7 @@ async create(storyData) {
       const params = {
         records: [
           {
-            // Only include updateable fields based on field visibility
+// Only include updateable fields based on field visibility
             Name: storyData.title || storyData.Name,
             Tags: storyData.Tags || '',
             user_id: storyData.user_id,
@@ -161,7 +169,11 @@ async create(storyData) {
             illustration_style: storyData.illustration_style,
             title: storyData.title,
             created_at: storyData.created_at || new Date().toISOString(),
-            pdf_url: storyData.pdf_url || null
+            pdf_url: storyData.pdf_url || null,
+            target_age_group: storyData.target_age_group,
+            character_name: storyData.character_name,
+            character_appearance: storyData.character_appearance || null,
+            character_personality: storyData.character_personality || null
           }
         ]
       };
@@ -247,7 +259,7 @@ async update(storyId, updateData) {
       const params = {
         records: [
           {
-            Id: parseInt(storyId),
+Id: parseInt(storyId),
             // Only include updateable fields based on field visibility
             ...(updateData.Name !== undefined && { Name: updateData.Name }),
             ...(updateData.Tags !== undefined && { Tags: updateData.Tags }),
@@ -264,7 +276,11 @@ async update(storyId, updateData) {
             ...(updateData.illustration_style !== undefined && { illustration_style: updateData.illustration_style }),
             ...(updateData.title !== undefined && { title: updateData.title }),
             ...(updateData.created_at !== undefined && { created_at: updateData.created_at }),
-            ...(updateData.pdf_url !== undefined && { pdf_url: updateData.pdf_url })
+            ...(updateData.pdf_url !== undefined && { pdf_url: updateData.pdf_url }),
+            ...(updateData.target_age_group !== undefined && { target_age_group: updateData.target_age_group }),
+            ...(updateData.character_name !== undefined && { character_name: updateData.character_name }),
+            ...(updateData.character_appearance !== undefined && { character_appearance: updateData.character_appearance }),
+            ...(updateData.character_personality !== undefined && { character_personality: updateData.character_personality })
           }
         ]
       };
@@ -357,13 +373,15 @@ async update(storyId, updateData) {
   async getRecentStories(limit = 6) {
     try {
       const params = {
-        fields: [
+fields: [
           { field: { Name: "Name" } },
           { field: { Name: "title" } },
           { field: { Name: "image_urls" } },
           { field: { Name: "character_count" } },
           { field: { Name: "illustration_count" } },
           { field: { Name: "illustration_style" } },
+          { field: { Name: "target_age_group" } },
+          { field: { Name: "character_name" } },
           { field: { Name: "created_at" } }
         ],
         orderBy: [
@@ -397,7 +415,7 @@ async update(storyId, updateData) {
   async searchStories(query) {
     try {
       const params = {
-        fields: [
+fields: [
           { field: { Name: "Name" } },
           { field: { Name: "title" } },
           { field: { Name: "prompt" } },
@@ -406,6 +424,10 @@ async update(storyId, updateData) {
           { field: { Name: "character_count" } },
           { field: { Name: "illustration_count" } },
           { field: { Name: "illustration_style" } },
+          { field: { Name: "target_age_group" } },
+          { field: { Name: "character_name" } },
+          { field: { Name: "character_appearance" } },
+          { field: { Name: "character_personality" } },
           { field: { Name: "created_at" } }
         ],
         where: [
@@ -485,7 +507,83 @@ async regenerateIllustration(storyId, illustrationIndex, sceneDescription) {
   }
 
 // Extract key story elements for contextual illustration generation with enhanced prompt processing
-  extractStoryElements(storyText, prompt, enhancedPrompt = null) {
+// Storybook Magic: Extract story elements for character consistency and age-appropriate content
+  extractStoryElements(storyText, prompt, enhancedPrompt = null, targetAgeGroup = '1-2', characterName = null) {
+    const combinedText = `${storyText || ''} ${prompt || ''} ${enhancedPrompt || ''}`.toLowerCase();
+    
+    const elements = {
+      characters: this.extractCharacterTypes(combinedText),
+      settings: this.extractSettingTypes(combinedText),
+      mood: this.extractMoodTypes(combinedText),
+      actions: this.extractActionTypes(combinedText),
+      themes: this.extractThemeTypes(combinedText),
+      goals: this.extractUserGoals(combinedText),
+      ageGroup: targetAgeGroup,
+      mainCharacter: characterName || this.generateCharacterName(combinedText),
+      characterAppearance: this.generateCharacterAppearance(combinedText, characterName),
+      characterPersonality: this.generateCharacterPersonality(combinedText, targetAgeGroup)
+    };
+
+    return elements;
+  }
+
+  // Generate appropriate character name based on story content
+  generateCharacterName(text) {
+    const characters = this.extractCharacterTypes(text);
+    const nameMap = {
+      'rabbit': ['Bouncy', 'Hopscotch', 'Clover', 'Nibbles'],
+      'dragon': ['Sparkle', 'Ember', 'Rainbow', 'Puff'],
+      'princess': ['Luna', 'Rose', 'Aria', 'Belle'],
+      'child': ['Lily', 'Max', 'Sophie', 'Sam'],
+      'cat': ['Whiskers', 'Mittens', 'Shadow', 'Luna'],
+      'dog': ['Buddy', 'Daisy', 'Charlie', 'Ruby'],
+      'fox': ['Rusty', 'Amber', 'Clever', 'Swift'],
+      'bear': ['Honey', 'Cocoa', 'Cuddles', 'Bruno'],
+      'bird': ['Chirpy', 'Melody', 'Sky', 'Feather'],
+      'fairy': ['Twinkle', 'Shimmer', 'Stardust', 'Bloom']
+    };
+
+    const mainCharacter = characters[0] || 'character';
+    const names = nameMap[mainCharacter] || ['Buddy', 'Sunny', 'Happy', 'Joy'];
+    return names[Math.floor(Math.random() * names.length)];
+  }
+
+  // Generate character appearance description
+  generateCharacterAppearance(text, characterName) {
+    const characters = this.extractCharacterTypes(text);
+    const mainCharacter = characters[0] || 'character';
+    
+    const appearanceMap = {
+      'rabbit': 'A fluffy bunny with soft ears, bright eyes, and a cotton-tail that bounces when happy',
+      'dragon': 'A friendly dragon with colorful scales that shimmer in the sunlight and kind, gentle eyes',
+      'princess': 'A kind princess with flowing hair, a beautiful dress, and a warm, welcoming smile',
+      'child': 'A cheerful child with bright eyes, rosy cheeks, and clothes perfect for adventures',
+      'cat': 'A soft, cuddly cat with whiskers that twitch with curiosity and paws that pad quietly',
+      'dog': 'A loyal dog with a wagging tail, floppy ears, and eyes full of friendship and joy',
+      'fox': 'A clever fox with a bushy tail, pointed ears, and bright, intelligent eyes',
+      'bear': 'A gentle bear with soft fur, kind eyes, and paws perfect for giving warm hugs',
+      'bird': 'A colorful bird with beautiful feathers, bright eyes, and wings that love to soar',
+      'fairy': 'A magical fairy with delicate wings, sparkling clothes, and a wand that glimmers'
+    };
+
+    return appearanceMap[mainCharacter] || 'A wonderful character with kind eyes and a gentle heart, ready for magical adventures';
+  }
+
+  // Generate age-appropriate character personality
+  generateCharacterPersonality(text, ageGroup) {
+    const baseTraits = ['kind', 'curious', 'brave', 'friendly', 'helpful'];
+    
+    const ageSpecificTraits = {
+      '1-2': ['gentle', 'playful', 'loving', 'simple', 'caring'],
+      '3-5': ['adventurous', 'imaginative', 'cheerful', 'resourceful', 'loyal'],
+      '6-8': ['determined', 'creative', 'thoughtful', 'problem-solving', 'confident'],
+      '9-12': ['wise', 'empathetic', 'independent', 'responsible', 'inspiring']
+    };
+
+    const traits = [...baseTraits, ...(ageSpecificTraits[ageGroup] || ageSpecificTraits['1-2'])];
+    const selectedTraits = traits.slice(0, 3);
+    
+    return `A ${selectedTraits.join(', ')} character who learns important lessons and helps others along the way. Perfect for inspiring young readers aged ${ageGroup}.`;
     // Combine all available text sources for comprehensive analysis
     const combinedText = [storyText, prompt, enhancedPrompt]
       .filter(text => text && text.trim())
@@ -502,21 +600,22 @@ async regenerateIllustration(storyId, illustrationIndex, sceneDescription) {
     };
   }
 
-  extractCharacterTypes(text) {
+extractCharacterTypes(text) {
     const characters = [];
     const characterMap = {
       'bunny': 'rabbit', 'rabbit': 'rabbit', 'dragon': 'dragon', 'princess': 'princess', 
       'knight': 'knight', 'girl': 'child', 'boy': 'child', 'cat': 'cat', 'dog': 'dog', 
       'fox': 'fox', 'bear': 'bear', 'bird': 'bird', 'owl': 'owl', 'mouse': 'mouse',
       'fairy': 'fairy', 'wizard': 'wizard', 'unicorn': 'unicorn', 'mermaid': 'mermaid',
-      'pirate': 'pirate', 'astronaut': 'astronaut', 'detective': 'detective'
+      'pirate': 'pirate', 'astronaut': 'astronaut', 'detective': 'detective',
+      'puppy': 'dog', 'kitten': 'cat', 'chick': 'bird', 'lamb': 'sheep'
     };
     
     Object.keys(characterMap).forEach(key => {
       if (text.includes(key)) characters.push(characterMap[key]);
     });
     
-    return characters.length > 0 ? characters : ['character'];
+    return characters.length > 0 ? [...new Set(characters)] : ['character'];
   }
 
   extractSettingTypes(text) {
@@ -528,42 +627,45 @@ async regenerateIllustration(storyId, illustrationIndex, sceneDescription) {
       'house': 'house', 'village': 'village', 'town': 'village', 'city': 'city',
       'magical': 'enchanted', 'enchanted': 'enchanted', 'space': 'cosmic', 
       'underwater': 'underwater', 'farm': 'farm', 'jungle': 'jungle', 
-      'desert': 'desert', 'island': 'island', 'cave': 'cave'
+      'desert': 'desert', 'island': 'island', 'cave': 'cave', 'meadow': 'meadow',
+      'playground': 'playground', 'park': 'park', 'library': 'library'
     };
     
     Object.keys(settingMap).forEach(key => {
       if (text.includes(key)) settings.push(settingMap[key]);
     });
     
-    return settings.length > 0 ? settings : ['landscape'];
+    return settings.length > 0 ? [...new Set(settings)] : ['meadow'];
   }
 
   extractMoodTypes(text) {
-    if (text.includes('adventure') || text.includes('exciting') || text.includes('thrilling')) return 'adventure';
+    if (text.includes('adventure') || text.includes('exciting') || text.includes('thrilling')) return 'adventurous';
     if (text.includes('peaceful') || text.includes('calm') || text.includes('serene')) return 'peaceful';
     if (text.includes('magical') || text.includes('wonder') || text.includes('mystical')) return 'magical';
     if (text.includes('happy') || text.includes('joy') || text.includes('cheerful')) return 'joyful';
     if (text.includes('mysterious') || text.includes('secret') || text.includes('hidden')) return 'mysterious';
-    if (text.includes('funny') || text.includes('silly') || text.includes('humorous')) return 'humorous';
-    return 'whimsical';
+    if (text.includes('funny') || text.includes('silly') || text.includes('humorous')) return 'playful';
+    if (text.includes('gentle') || text.includes('soft') || text.includes('tender')) return 'gentle';
+    return 'cheerful';
   }
 
   extractActionTypes(text) {
     const actions = [];
     const actionMap = {
-      'flying': 'flight', 'running': 'running', 'swimming': 'swimming',
-      'dancing': 'dancing', 'playing': 'playing', 'exploring': 'exploration',
-      'cooking': 'cooking', 'reading': 'reading', 'singing': 'musical',
-      'building': 'construction', 'painting': 'artistic', 'climbing': 'climbing',
-      'racing': 'racing', 'helping': 'helping', 'saving': 'rescue',
-      'discovering': 'discovery', 'learning': 'learning'
+      'flying': 'flying', 'running': 'running', 'swimming': 'swimming',
+      'dancing': 'dancing', 'playing': 'playing', 'exploring': 'exploring',
+      'cooking': 'cooking', 'reading': 'reading', 'singing': 'singing',
+      'building': 'building', 'painting': 'painting', 'climbing': 'climbing',
+      'racing': 'racing', 'helping': 'helping', 'saving': 'rescuing',
+      'discovering': 'discovering', 'learning': 'learning', 'jumping': 'jumping',
+      'laughing': 'laughing', 'hugging': 'hugging', 'sharing': 'sharing'
     };
     
     Object.keys(actionMap).forEach(key => {
       if (text.includes(key)) actions.push(actionMap[key]);
     });
     
-    return actions.length > 0 ? actions : ['adventure'];
+    return actions.length > 0 ? [...new Set(actions)] : ['exploring'];
   }
 
   extractThemeTypes(text) {
@@ -571,20 +673,21 @@ async regenerateIllustration(storyId, illustrationIndex, sceneDescription) {
     const themeMap = {
       'friendship': 'friendship', 'friend': 'friendship', 'courage': 'courage', 'brave': 'courage',
       'kindness': 'kindness', 'kind': 'kindness', 'love': 'love', 'family': 'family',
-      'learning': 'education', 'school': 'education', 'nature': 'nature', 'environment': 'nature',
+      'learning': 'learning', 'school': 'learning', 'nature': 'nature', 'environment': 'nature',
       'teamwork': 'cooperation', 'together': 'cooperation', 'helping': 'helpfulness',
-      'dream': 'dreams', 'wish': 'dreams', 'grow': 'growth', 'change': 'transformation'
+      'dream': 'dreams', 'wish': 'dreams', 'grow': 'growth', 'change': 'growth',
+      'adventure': 'adventure', 'discovery': 'discovery', 'magic': 'magic'
     };
     
     Object.keys(themeMap).forEach(key => {
       if (text.includes(key)) themes.push(themeMap[key]);
     });
     
-    return themes.length > 0 ? themes : ['adventure'];
+    return themes.length > 0 ? [...new Set(themes)] : ['friendship'];
   }
 
   extractUserGoals(text) {
-    // Analyze enhanced prompts for user intentions and goals
+    // Storybook Magic: Analyze prompts for user intentions and educational goals
     const goals = [];
     
     if (text.includes('teach') || text.includes('learn') || text.includes('lesson')) {
@@ -602,43 +705,66 @@ async regenerateIllustration(storyId, illustrationIndex, sceneDescription) {
     if (text.includes('moral') || text.includes('value') || text.includes('character')) {
       goals.push('moral');
     }
+    if (text.includes('age') || text.includes('toddler') || text.includes('preschool')) {
+      goals.push('age-appropriate');
+    }
     
-    return goals.length > 0 ? goals : ['general'];
+    return goals.length > 0 ? [...new Set(goals)] : ['general'];
   }
 
-  // Generate enhanced scene-specific context for illustration
-  generateSceneContext(elements, sceneIndex, style) {
-    const character = elements.characters[0] || 'character';
-    const setting = elements.settings[0] || 'landscape';
-    const mood = elements.mood;
-    const action = elements.actions[0] || 'adventure';
-    const theme = elements.themes ? elements.themes[0] : 'friendship';
-    const goal = elements.goals ? elements.goals[0] : 'general';
+  // Storybook Magic: Generate enhanced scene-specific context for consistent illustrations
+  generateSceneContext(elements, sceneIndex, style, ageGroup = '1-2') {
+    const character = elements.mainCharacter || elements.characters[0] || 'character';
+    const setting = elements.settings[0] || 'meadow';
+    const mood = elements.mood || 'cheerful';
+    const action = elements.actions[0] || 'exploring';
+    const theme = elements.themes[0] || 'friendship';
+    const goal = elements.goals[0] || 'general';
     
-    // Enhanced scene descriptions based on user goals and story elements
-    const sceneDescriptions = [
-      `${character}_introduction_in_${setting}_${style}_${goal}`,
-      `${character}_${action}_${style}_${mood}_scene`,
-      `${character}_discovery_${setting}_${style}_${theme}`,
-      `${character}_challenge_${mood}_${style}_growth`,
-      `${character}_${theme}_moment_${setting}_${style}`,
-      `${character}_triumph_${setting}_${style}_${goal}`,
-      `${character}_friendship_${style}_${theme}_moment`,
-      `${character}_resolution_${mood}_${style}_accomplished`
-    ];
+    // Age-appropriate scene descriptions for consistent character illustration
+    const ageAppropriateScenes = {
+      '1-2': [
+        `${character} waking up in cozy ${setting}`,
+        `${character} ${action} with gentle expression`,
+        `${character} discovering something wonderful`,
+        `${character} making a new friend`,
+        `${character} feeling ${mood} and content`,
+        `${character} sharing with others`,
+        `${character} learning something simple`,
+        `${character} going to sleep peacefully`
+      ],
+      '3-5': [
+        `${character} beginning adventure in ${setting}`,
+        `${character} ${action} with curiosity and wonder`,
+        `${character} facing a small challenge bravely`,
+        `${character} helping a friend in need`,
+        `${character} celebrating ${theme}`,
+        `${character} solving a simple problem`,
+        `${character} expressing ${mood} emotions`,
+        `${character} completing the journey successfully`
+      ]
+    };
+
+    const sceneTemplates = ageAppropriateScenes[ageGroup] || ageAppropriateScenes['1-2'];
+    const selectedScene = sceneTemplates[sceneIndex % sceneTemplates.length];
     
-    const selectedDescription = sceneDescriptions[sceneIndex % sceneDescriptions.length];
+    const seed = `${character}_${setting}_${sceneIndex}_${style}_${Date.now()}`;
     
     return {
-      description: selectedDescription,
-      seed: `${selectedDescription}_${Date.now()}`,
+      description: selectedScene,
+      seed: seed,
+      prompt: `A ${style} illustration showing ${selectedScene}, with consistent character appearance throughout, ${mood} mood, suitable for ages ${ageGroup}`,
+      caption: selectedScene,
       context: {
-        character,
-        setting,
-        mood,
-        action,
-        theme,
-        goal
+        character: character,
+        setting: setting,
+        mood: mood,
+        action: action,
+        theme: theme,
+        goal: goal,
+        ageGroup: ageGroup,
+        appearance: elements.characterAppearance,
+        personality: elements.characterPersonality
       }
     };
   }

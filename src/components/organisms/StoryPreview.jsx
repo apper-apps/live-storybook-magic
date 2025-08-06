@@ -64,20 +64,33 @@ const handleRegenerateIllustration = async (illustrationIndex) => {
       const illustration = illustrations[illustrationIndex];
       const sceneDescription = illustration?.description || `Scene ${illustrationIndex + 1}`;
       
-      // Call the actual service method to regenerate the illustration
-      const updatedStory = await storiesService.regenerateIllustration(story.Id, illustrationIndex, sceneDescription);
+      // Storybook Magic: Regenerate with character consistency
+      const characterContext = {
+        character_name: story.character_name,
+        target_age_group: story.target_age_group,
+        illustration_style: story.illustration_style,
+        character_appearance: story.character_appearance
+      };
+      
+      // Call the actual service method to regenerate the illustration with character context
+      const updatedStory = await storiesService.regenerateIllustration(
+        story.Id, 
+        illustrationIndex, 
+        sceneDescription,
+        characterContext
+      );
       
       if (updatedStory) {
         // Update the parent component with the new story data
         // This would typically be passed through props or context
-        toast.success(`Contextual illustration ${illustrationIndex + 1} regenerated successfully!`);
+        toast.success(`Character-consistent illustration ${illustrationIndex + 1} regenerated successfully!`);
       } else {
         throw new Error('Failed to regenerate illustration');
       }
       
     } catch (error) {
       console.error("Error regenerating illustration:", error);
-      toast.error("Failed to regenerate contextual illustration. Please try again.");
+      toast.error("Failed to regenerate character-consistent illustration. Please try again.");
     } finally {
       setRegeneratingIllustrations(prev => {
         const updated = new Set(prev);
@@ -93,23 +106,27 @@ const handleRegenerateIllustration = async (illustrationIndex) => {
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Story Info Header */}
       <Card className="p-6">
-        <div className="flex items-center justify-between">
+<div className="flex items-center justify-between">
           <div>
             <h2 className="font-display text-2xl font-bold gradient-text mb-2">
               {story.title || "My Magical Story"}
             </h2>
-            <div className="flex items-center space-x-6 text-sm text-gray-600">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600">
+              <span className="flex items-center">
+                <ApperIcon name="Users" className="w-4 h-4 mr-1" />
+                Ages {story.target_age_group || '1-2'}
+              </span>
+              <span className="flex items-center">
+                <ApperIcon name="Heart" className="w-4 h-4 mr-1" />
+                {story.character_name || 'Character'}
+              </span>
               <span className="flex items-center">
                 <ApperIcon name="Type" className="w-4 h-4 mr-1" />
-                {story.character_count || story.story_text?.length || 0} characters
+                {story.character_count || story.story_text?.length || 0} words
               </span>
               <span className="flex items-center">
                 <ApperIcon name="Image" className="w-4 h-4 mr-1" />
                 {illustrations.length} illustrations
-              </span>
-              <span className="flex items-center">
-                <ApperIcon name="Brain" className="w-4 h-4 mr-1" />
-                {story.llm_used}
               </span>
             </div>
           </div>
@@ -151,7 +168,7 @@ const handleRegenerateIllustration = async (illustrationIndex) => {
               className="h-full flex flex-col"
             >
               {currentPageData?.isTitle ? (
-                // Title Page
+// Title Page - Storybook Magic enhanced
                 <div className="flex-1 flex flex-col items-center justify-center text-center space-y-8">
                   <div className="w-32 h-32 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-full flex items-center justify-center mb-8">
                     <ApperIcon name="BookOpen" className="w-16 h-16 text-white" />
@@ -161,9 +178,20 @@ const handleRegenerateIllustration = async (illustrationIndex) => {
                     <h1 className="font-display text-4xl font-bold gradient-text mb-4">
                       {currentPageData.title}
                     </h1>
-                    <p className="text-xl text-gray-600">
+                    <p className="text-xl text-gray-600 mb-2">
                       {currentPageData.subtitle}
                     </p>
+                    
+                    {story.character_name && (
+                      <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4 max-w-md mx-auto mb-4">
+                        <p className="text-lg font-semibold text-purple-800">
+                          Starring: {story.character_name}
+                        </p>
+                        <p className="text-sm text-purple-600">
+                          Perfect for ages {story.target_age_group}
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   {story.prompt && (
