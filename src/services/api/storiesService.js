@@ -112,31 +112,36 @@ async create(storyData) {
       // Helper function to compress image URLs to fit within 255 character limit
       const compressImageUrls = (urls) => {
         if (!urls) return '';
-        if (!Array.isArray(urls)) return urls.toString().substring(0, 250);
+        if (!Array.isArray(urls)) return urls.toString().substring(0, 240);
         
         // Convert to JSON string
         const jsonString = JSON.stringify(urls);
         
         // If within limit, return as is
-        if (jsonString.length <= 250) {
+        if (jsonString.length <= 240) {
           return jsonString;
         }
         
-        // Compress by taking only essential parts of URLs (filename/id)
-        const compressedUrls = urls.map(url => {
+        // More aggressive compression - extract minimal identifiers
+        const compressedUrls = urls.map((url, index) => {
           if (typeof url === 'string') {
-            // Extract just the filename or last segment
-            const segments = url.split('/');
-            const filename = segments[segments.length - 1];
-            // Keep only first 30 chars of filename to ensure we fit
-            return filename.substring(0, 30);
+            // Try to extract query parameters or filename
+            const urlParts = url.split('?');
+            const queryPart = urlParts[1];
+            if (queryPart) {
+              // Extract meaningful part from query (like random=bunny1)
+              const match = queryPart.match(/random=([^&]+)/);
+              if (match) return match[1].substring(0, 20);
+            }
+            // Fallback: use index-based identifier
+            return `img${index}_${Date.now().toString().slice(-4)}`;
           }
-          return url;
+          return `img${index}`;
         });
         
         const compressedJson = JSON.stringify(compressedUrls);
-        // Final safety check - truncate if still too long
-        return compressedJson.substring(0, 250);
+        // Absolute safety check - truncate to guarantee under limit
+        return compressedJson.substring(0, 240);
       };
 
       const params = {
@@ -204,34 +209,39 @@ async create(storyData) {
   // Update an existing story (only includes updateable fields)
 async update(storyId, updateData) {
     try {
-      // Helper function to compress image URLs to fit within 255 character limit
+// Helper function to compress image URLs to fit within 255 character limit
       const compressImageUrls = (urls) => {
         if (!urls) return '';
-        if (!Array.isArray(urls)) return urls.toString().substring(0, 250);
+        if (!Array.isArray(urls)) return urls.toString().substring(0, 240);
         
         // Convert to JSON string
         const jsonString = JSON.stringify(urls);
         
         // If within limit, return as is
-        if (jsonString.length <= 250) {
+        if (jsonString.length <= 240) {
           return jsonString;
         }
         
-        // Compress by taking only essential parts of URLs (filename/id)
-        const compressedUrls = urls.map(url => {
+        // More aggressive compression - extract minimal identifiers
+        const compressedUrls = urls.map((url, index) => {
           if (typeof url === 'string') {
-            // Extract just the filename or last segment
-            const segments = url.split('/');
-            const filename = segments[segments.length - 1];
-            // Keep only first 30 chars of filename to ensure we fit
-            return filename.substring(0, 30);
+            // Try to extract query parameters or filename
+            const urlParts = url.split('?');
+            const queryPart = urlParts[1];
+            if (queryPart) {
+              // Extract meaningful part from query (like random=bunny1)
+              const match = queryPart.match(/random=([^&]+)/);
+              if (match) return match[1].substring(0, 20);
+            }
+            // Fallback: use index-based identifier
+            return `img${index}_${Date.now().toString().slice(-4)}`;
           }
-          return url;
+          return `img${index}`;
         });
         
         const compressedJson = JSON.stringify(compressedUrls);
-        // Final safety check - truncate if still too long
-        return compressedJson.substring(0, 250);
+        // Absolute safety check - truncate to guarantee under limit
+        return compressedJson.substring(0, 240);
       };
 
       const params = {
