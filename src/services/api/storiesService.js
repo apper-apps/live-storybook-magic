@@ -107,7 +107,7 @@ class StoriesService {
   }
 
   // Create a new story (only includes updateable fields)
-  async create(storyData) {
+async create(storyData) {
     try {
       const params = {
         records: [
@@ -120,7 +120,7 @@ class StoriesService {
             enhanced_prompt: storyData.enhanced_prompt,
             llm_used: storyData.llm_used,
             story_text: storyData.story_text,
-            image_urls: storyData.image_urls,
+            image_urls: Array.isArray(storyData.image_urls) ? JSON.stringify(storyData.image_urls) : storyData.image_urls,
             character_count: parseInt(storyData.character_count) || 0,
             illustration_count: parseInt(storyData.illustration_count) || 0,
             illustration_style: storyData.illustration_style,
@@ -172,7 +172,7 @@ class StoriesService {
   }
 
   // Update an existing story (only includes updateable fields)
-  async update(storyId, updateData) {
+async update(storyId, updateData) {
     try {
       const params = {
         records: [
@@ -186,7 +186,9 @@ class StoriesService {
             ...(updateData.enhanced_prompt !== undefined && { enhanced_prompt: updateData.enhanced_prompt }),
             ...(updateData.llm_used !== undefined && { llm_used: updateData.llm_used }),
             ...(updateData.story_text !== undefined && { story_text: updateData.story_text }),
-            ...(updateData.image_urls !== undefined && { image_urls: updateData.image_urls }),
+            ...(updateData.image_urls !== undefined && { 
+              image_urls: Array.isArray(updateData.image_urls) ? JSON.stringify(updateData.image_urls) : updateData.image_urls 
+            }),
             ...(updateData.character_count !== undefined && { character_count: parseInt(updateData.character_count) }),
             ...(updateData.illustration_count !== undefined && { illustration_count: parseInt(updateData.illustration_count) }),
             ...(updateData.illustration_style !== undefined && { illustration_style: updateData.illustration_style }),
