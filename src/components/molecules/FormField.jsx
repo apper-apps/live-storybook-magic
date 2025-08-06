@@ -11,8 +11,11 @@ const FormField = ({
   error, 
   placeholder,
   options = [],
+  helpText,
   ...props 
 }) => {
+  // Extract helpText to prevent it from being passed to DOM elements
+  const cleanProps = { ...props };
 const handleChange = (e) => {
     if (typeof onChange === 'function') {
       // Handle both event objects (from Input/Textarea) and direct values (from Select)
@@ -23,26 +26,26 @@ const handleChange = (e) => {
 
   if (type === "textarea") {
     return (
-      <Textarea
+<Textarea
         label={label}
         value={value}
         onChange={handleChange}
         error={error}
         placeholder={placeholder}
-        {...props}
+        {...cleanProps}
       />
     );
   }
 
   if (type === "select") {
     return (
-      <Select
+<Select
         label={label}
         value={value}
         onChange={handleChange}
         error={error}
         placeholder={placeholder}
-        {...props}
+        {...cleanProps}
       >
         {options.map((option) => (
           <option key={option.value} value={option.value}>
@@ -54,14 +57,14 @@ const handleChange = (e) => {
   }
 
   return (
-    <Input
+<Input
       type={type}
       label={label}
       value={value}
       onChange={handleChange}
       error={error}
       placeholder={placeholder}
-      {...props}
+      {...cleanProps}
     />
   );
 };
