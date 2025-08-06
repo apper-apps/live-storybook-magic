@@ -583,13 +583,11 @@ async regenerateIllustration(storyId, illustrationIndex, sceneDescription) {
     const traits = [...baseTraits, ...(ageSpecificTraits[ageGroup] || ageSpecificTraits['1-2'])];
     const selectedTraits = traits.slice(0, 3);
     
-    return `A ${selectedTraits.join(', ')} character who learns important lessons and helps others along the way. Perfect for inspiring young readers aged ${ageGroup}.`;
-    // Combine all available text sources for comprehensive analysis
+// Combine all available text sources for comprehensive analysis
     const combinedText = [storyText, prompt, enhancedPrompt]
       .filter(text => text && text.trim())
       .join(' ')
       .toLowerCase();
-    
     return {
       characters: this.extractCharacterTypes(combinedText),
       settings: this.extractSettingTypes(combinedText),
