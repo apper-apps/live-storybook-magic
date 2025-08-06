@@ -1,5 +1,4 @@
 import React from "react";
-import Error from "@/components/ui/Error";
 let pipeline = null;
 let isLoading = false;
 let initializationAttempts = 0;
