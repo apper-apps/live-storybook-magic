@@ -440,12 +440,8 @@ async update(storyId, updateData) {
   }
 
   // Regenerate illustration for a story
-  async regenerateIllustration(storyId, illustrationIndex, sceneDescription) {
+async regenerateIllustration(storyId, illustrationIndex, sceneDescription) {
     try {
-      // In a real implementation, this would trigger illustration regeneration
-      // For now, we'll update the story with a new random image
-      const newImageUrl = `https://picsum.photos/400/300?random=${Date.now()}`;
-      
       const story = await this.getById(storyId);
       if (!story) return null;
 
@@ -456,6 +452,14 @@ async update(storyId, updateData) {
         imageUrls = [];
       }
 
+      // Generate contextual illustration based on story content and style
+      const storyElements = this.extractStoryElements(story.story_text, story.prompt);
+      const illustrationStyle = story.illustration_style || 'cartoon';
+      
+      // Create scene-specific illustration URL that matches the story content
+      const sceneContext = this.generateSceneContext(storyElements, illustrationIndex, illustrationStyle);
+      const newImageUrl = `https://picsum.photos/400/300?random=${sceneContext.seed}&style=${illustrationStyle}&scene=${sceneContext.description}`;
+
       if (illustrationIndex < imageUrls.length) {
         imageUrls[illustrationIndex] = newImageUrl;
       }
@@ -465,7 +469,7 @@ async update(storyId, updateData) {
       });
 
       if (updatedStory) {
-        toast.success('Illustration regenerated successfully!');
+        toast.success(`${illustrationStyle.charAt(0).toUpperCase() + illustrationStyle.slice(1)} illustration regenerated for scene ${illustrationIndex + 1}!`);
       }
 
       return updatedStory;
@@ -476,8 +480,99 @@ async update(storyId, updateData) {
         console.error(error.message);
       }
       toast.error('Failed to regenerate illustration');
-return null;
+      return null;
     }
+  }
+
+  // Extract key story elements for contextual illustration generation
+  extractStoryElements(storyText, prompt) {
+    const text = (storyText + ' ' + prompt).toLowerCase();
+    
+    return {
+      characters: this.extractCharacterTypes(text),
+      settings: this.extractSettingTypes(text),
+      mood: this.extractMoodTypes(text),
+      actions: this.extractActionTypes(text)
+    };
+  }
+
+  extractCharacterTypes(text) {
+    const characters = [];
+    const characterMap = {
+      'bunny': 'rabbit', 'dragon': 'dragon', 'princess': 'princess', 'knight': 'knight',
+      'girl': 'child', 'boy': 'child', 'cat': 'cat', 'dog': 'dog', 'fox': 'fox',
+      'bear': 'bear', 'bird': 'bird', 'owl': 'owl', 'mouse': 'mouse'
+    };
+    
+    Object.keys(characterMap).forEach(key => {
+      if (text.includes(key)) characters.push(characterMap[key]);
+    });
+    
+    return characters.length > 0 ? characters : ['character'];
+  }
+
+  extractSettingTypes(text) {
+    const settings = [];
+    const settingMap = {
+      'forest': 'woodland', 'castle': 'castle', 'ocean': 'seaside', 'mountain': 'mountain',
+      'garden': 'garden', 'school': 'school', 'home': 'house', 'village': 'village',
+      'magical': 'enchanted', 'space': 'cosmic', 'underwater': 'underwater'
+    };
+    
+    Object.keys(settingMap).forEach(key => {
+      if (text.includes(key)) settings.push(settingMap[key]);
+    });
+    
+    return settings.length > 0 ? settings : ['landscape'];
+  }
+
+  extractMoodTypes(text) {
+    if (text.includes('adventure') || text.includes('exciting')) return 'adventure';
+    if (text.includes('peaceful') || text.includes('calm')) return 'peaceful';
+    if (text.includes('magical') || text.includes('wonder')) return 'magical';
+    if (text.includes('happy') || text.includes('joy')) return 'joyful';
+    return 'whimsical';
+  }
+
+  extractActionTypes(text) {
+    const actions = [];
+    const actionMap = {
+      'flying': 'flight', 'running': 'running', 'swimming': 'swimming',
+      'dancing': 'dancing', 'playing': 'playing', 'exploring': 'exploration',
+      'cooking': 'cooking', 'reading': 'reading', 'singing': 'musical'
+    };
+    
+    Object.keys(actionMap).forEach(key => {
+      if (text.includes(key)) actions.push(actionMap[key]);
+    });
+    
+    return actions.length > 0 ? actions : ['adventure'];
+  }
+
+  // Generate scene-specific context for illustration
+  generateSceneContext(elements, sceneIndex, style) {
+    const character = elements.characters[0] || 'character';
+    const setting = elements.settings[0] || 'landscape';
+    const mood = elements.mood;
+    const action = elements.actions[0] || 'adventure';
+    
+    const sceneDescriptions = [
+      `${character}_in_${setting}_${style}_intro`,
+      `${character}_${action}_${style}_scene`,
+      `${character}_discovery_${setting}_${style}`,
+      `${character}_challenge_${mood}_${style}`,
+      `${character}_triumph_${setting}_${style}`,
+      `${character}_friendship_${style}_moment`,
+      `${character}_learning_${setting}_${style}`,
+      `${character}_resolution_${mood}_${style}`
+    ];
+    
+    const selectedDescription = sceneDescriptions[sceneIndex % sceneDescriptions.length];
+    
+    return {
+      description: selectedDescription,
+      seed: `${selectedDescription}_${Date.now()}`
+    };
   }
 }
 

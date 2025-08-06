@@ -5,18 +5,108 @@ let initializationAttempts = 0;
 const MAX_ATTEMPTS = 3;
 const TIMEOUT_MS = 30000; // 30 seconds
 
-// Fallback enhancement function
+// Advanced fallback enhancement function with sophisticated storytelling elements
 function fallbackEnhancement(prompt) {
-  // Basic prompt enhancement using simple rules
-  const enhancements = [
-    'Create a vivid and engaging story about',
-    'Tell an imaginative tale featuring', 
-    'Craft a wonderful story that includes',
-    'Write a captivating story about'
-  ];
+  // Extract key elements from the original prompt to build upon
+  const promptWords = prompt.toLowerCase().split(' ');
   
-  const randomEnhancement = enhancements[Math.floor(Math.random() * enhancements.length)];
-  return `${randomEnhancement} ${prompt}. Make it age-appropriate and full of wonder.`;
+  // Determine story themes and elements based on prompt content
+  const storyElements = {
+    characters: extractCharacters(promptWords),
+    settings: extractSettings(promptWords),
+    themes: extractThemes(promptWords),
+    conflicts: generateConflicts(promptWords),
+    emotions: generateEmotions(promptWords)
+  };
+  
+  // Create a sophisticated, multi-layered enhancement
+  const enhancedPrompt = `Create an enchanting and richly detailed children's story about ${prompt}. 
+
+**Character Development**: ${storyElements.characters} Each character should have distinctive personality traits, motivations, and growth arcs that children can relate to and learn from.
+
+**Vivid Setting**: ${storyElements.settings} The world should feel magical yet believable, with sensory details that help young readers visualize and immerse themselves in the story.
+
+**Engaging Plot Structure**: 
+- Opening: Establish the character's ordinary world and introduce the central challenge or mystery
+- Rising Action: ${storyElements.conflicts} Include obstacles that test the character's courage, kindness, and problem-solving abilities
+- Climax: A pivotal moment where the character must use everything they've learned to overcome the main challenge
+- Resolution: ${storyElements.emotions} Show how the character has grown and what valuable life lessons they've discovered
+
+**Themes and Messages**: Weave in age-appropriate themes of ${storyElements.themes} while maintaining an optimistic, hopeful tone that celebrates friendship, perseverance, and the power of believing in oneself.
+
+**Literary Elements**: Use rich, descriptive language with gentle humor, meaningful dialogue, and moments of wonder that spark imagination. Include subtle foreshadowing and satisfying callbacks that make the story feel cohesive and rewarding.
+
+**Educational Value**: Naturally incorporate learning opportunities about emotions, social skills, problem-solving, and moral decision-making without being preachy or heavy-handed.
+
+The story should be suitable for children aged 4-8, with a perfect balance of adventure, heart, and wisdom that creates lasting memories and inspires repeated readings.`;
+
+  return enhancedPrompt;
+}
+
+// Helper functions for sophisticated prompt analysis
+function extractCharacters(words) {
+  const characterIndicators = ['bunny', 'dragon', 'princess', 'knight', 'girl', 'boy', 'cat', 'dog', 'bird', 'fox', 'bear', 'mouse', 'child', 'kid'];
+  const foundCharacters = words.filter(word => characterIndicators.includes(word));
+  
+  if (foundCharacters.length > 0) {
+    return `Develop ${foundCharacters.join(' and ')} as fully realized characters with unique voices, dreams, and personalities that shine through their actions and dialogue.`;
+  }
+  return `Create memorable, relatable characters with distinct personalities, clear motivations, and the capacity for meaningful growth throughout their journey.`;
+}
+
+function extractSettings(words) {
+  const settingWords = ['forest', 'castle', 'ocean', 'mountain', 'garden', 'school', 'home', 'village', 'city', 'space', 'underwater', 'magical', 'enchanted'];
+  const foundSettings = words.filter(word => settingWords.includes(word));
+  
+  if (foundSettings.length > 0) {
+    return `Set the story in a beautifully crafted ${foundSettings.join(' and ')} environment with rich atmospheric details, interesting locations to explore, and settings that actively contribute to the plot development.`;
+  }
+  return `Create an immersive, imaginative setting that feels both wondrous and authentic, with detailed environments that enhance the story's emotional impact and provide opportunities for discovery.`;
+}
+
+function extractThemes(words) {
+  const themeMap = {
+    'friend': 'friendship and loyalty',
+    'brave': 'courage and bravery',
+    'kind': 'kindness and empathy',
+    'help': 'helping others and community',
+    'learn': 'learning and growth',
+    'magic': 'wonder and possibility',
+    'adventure': 'exploration and discovery',
+    'family': 'family bonds and love'
+  };
+  
+  const identifiedThemes = [];
+  words.forEach(word => {
+    if (themeMap[word]) {
+      identifiedThemes.push(themeMap[word]);
+    }
+  });
+  
+  if (identifiedThemes.length > 0) {
+    return identifiedThemes.join(', ') + ', personal growth, and the importance of staying true to oneself';
+  }
+  return 'friendship, courage, kindness, perseverance, self-discovery, and the magic that exists in everyday moments';
+}
+
+function generateConflicts(words) {
+  const conflictTypes = [
+    'Present challenges that require creative thinking and collaboration with friends',
+    'Include obstacles that test the character\'s values and moral compass',
+    'Create situations where the character must overcome self-doubt and fear',
+    'Develop conflicts that can only be resolved through kindness and understanding'
+  ];
+  return conflictTypes[Math.floor(Math.random() * conflictTypes.length)];
+}
+
+function generateEmotions(words) {
+  const emotionalJourneys = [
+    'Conclude with a heartwarming resolution that celebrates the character\'s journey and the bonds they\'ve formed',
+    'End with a sense of accomplishment and newfound confidence that inspires young readers',
+    'Finish with a touching moment that reinforces the story\'s themes while opening possibilities for future adventures',
+    'Close with a satisfying conclusion that leaves readers feeling hopeful, empowered, and eager to apply the story\'s lessons'
+  ];
+  return emotionalJourneys[Math.floor(Math.random() * emotionalJourneys.length)];
 }
 
 // Initialize transformers with robust error handling

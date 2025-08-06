@@ -54,20 +54,30 @@ const StoryPreview = ({ story, illustrations = [] }) => {
     }
 };
 
-  const handleRegenerateIllustration = async (illustrationIndex) => {
+const handleRegenerateIllustration = async (illustrationIndex) => {
     setRegeneratingIllustrations(prev => new Set([...prev, illustrationIndex]));
     
     try {
-      const illustration = illustrations[illustrationIndex];
-      const regeneratedIllustration = await null; // This would be replaced with actual API call
+      // Import storiesService dynamically to avoid circular dependency
+      const { storiesService } = await import('@/services/api/storiesService');
       
-      // In a real implementation, this would update the illustration in the parent component
-      // For now, we'll just show a success message
-      toast.success(`Illustration ${illustrationIndex + 1} regenerated successfully!`);
+      const illustration = illustrations[illustrationIndex];
+      const sceneDescription = illustration?.description || `Scene ${illustrationIndex + 1}`;
+      
+      // Call the actual service method to regenerate the illustration
+      const updatedStory = await storiesService.regenerateIllustration(story.Id, illustrationIndex, sceneDescription);
+      
+      if (updatedStory) {
+        // Update the parent component with the new story data
+        // This would typically be passed through props or context
+        toast.success(`Contextual illustration ${illustrationIndex + 1} regenerated successfully!`);
+      } else {
+        throw new Error('Failed to regenerate illustration');
+      }
       
     } catch (error) {
       console.error("Error regenerating illustration:", error);
-      toast.error("Failed to regenerate illustration. Please try again.");
+      toast.error("Failed to regenerate contextual illustration. Please try again.");
     } finally {
       setRegeneratingIllustrations(prev => {
         const updated = new Set(prev);

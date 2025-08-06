@@ -40,6 +40,7 @@ const [apiKeys, setApiKeys] = useState({
   ];
 
 const styleOptions = [
+    { value: "cartoon", label: "Cartoon" },
     { value: "watercolor", label: "Watercolor" },
     { value: "sketch", label: "Sketch" },
     { value: "digital", label: "Digital Art" }
